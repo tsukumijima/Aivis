@@ -50,13 +50,13 @@ def segment(
     model = stable_whisper.load_model(model_name.value, device='cpu')  # Magic!
     typer.echo('Whisper model loaded.')
 
-    # モデルを JIT にコンパイル
+    # 学習済みモデルを JIT にコンパイル
     typer.echo('Whisper model compiling...')
     model.encoder = torch.jit.script(model.encoder)  # type: ignore
     model.decoder = torch.jit.script(model.decoder)  # type: ignore
     typer.echo('Whisper model compiled.')
 
-    # 推論の高速化
+    # 推論の高速化 & メモリ使用量の削減
     typer.echo('Run model.half() ...')
     _ = model.half()
     typer.echo('Run model.half() done.')
