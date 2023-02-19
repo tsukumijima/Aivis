@@ -1,3 +1,5 @@
+_/
+.cache/
 .venv/
 01-Sources/
 02-PrepareSources/

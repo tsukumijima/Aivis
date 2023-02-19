@@ -9,6 +9,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
+import efficient_whisper
 import json
 import stable_whisper
 import torch
@@ -33,21 +34,24 @@ def segment(
     # 01-Sources フォルダ以下のメディアファイルを取得
     ## 拡張子は .wav / .mp3 / .m4a / .mp4 / .ts
     ## アルファベット順にソートする
-    source_files = sorted(list(constants.BASE_DIR.glob('01-Sources/**/*.*')))
+    source_files = sorted(list(constants.SOURCES_DIR.glob('**/*.*')))
     source_files = [i for i in source_files if i.suffix in constants.SOURCE_FILE_EXTENSIONS]
 
     # Demucs V4 (htdemucs_ft) で AI 音源分離を行い、音声ファイルからボイスのみを抽出する
     ## 本来は楽曲をボーカル・ドラム・ベース・その他に音源分離するための AI だが、これを応用して BGM・SE・ノイズなどを大部分除去できる
     ## Demucs でボーカル (=ボイス) のみを抽出したファイルは 02-PrepareSources/(音声ファイル名).wav に出力される
     ## すでに抽出済みのファイルがある場合は音源分離は行われず、すでに抽出済みのファイルを使用する
-    voices_files = demucs.ExtractVoices(source_files, constants.BASE_DIR / '02-PrepareSources')
+    voices_files = demucs.ExtractVoices(source_files, constants.PREPARE_SOURCES_DIR)
 
     # Whisper の推論を高速化し、メモリ使用率を下げて VRAM 8GB でも large-v2 モデルを使用できるようにする
     # ref: https://qiita.com/halhorn/items/d2672eee452ba5eb6241
 
     # Whisper の学習済みモデルをロード
+    ## 一旦 CPU としてロードしてから CUDA に変更すると、メモリ使用量が大幅に削減されるらしい…
+    ## stable-ts (stable_whisper.modify_model()) 向けにロードしたモデルを変更する
     typer.echo('Whisper model loading...')
-    model = stable_whisper.load_model(model_name.value, device='cpu')  # Magic!
+    model = efficient_whisper.load_model(model_name.value, device='cpu')
+    stable_whisper.modify_model(model)  # type: ignore
     typer.echo('Whisper model loaded.')
 
     # 学習済みモデルを JIT にコンパイル
@@ -70,7 +74,7 @@ def segment(
         # 出力先フォルダを作成
         ## すでに存在している場合は生成済みなのでスキップ
         ## もしもう一度生成したい場合はフォルダを削除すること
-        folder = constants.BASE_DIR / f'03-Segments/{voices_file.name.split(".")[0]}'
+        folder = constants.SEGMENTS_DIR / voices_file.name.split('.')[0]
         if folder.exists():
             typer.echo(f'Folder {folder} already exists. Skip.')
             continue
@@ -78,7 +82,7 @@ def segment(
 
         # すでに音声認識データ (JSON) がある場合はそのデータを使い、新規の音声認識は行わない
         finalized_results = []
-        results_json_file = constants.BASE_DIR / f'02-PrepareSources/{voices_file.name.split(".")[0]}.json'
+        results_json_file = constants.PREPARE_SOURCES_DIR / f'{voices_file.name.split(".")[0]}.json'
         if results_json_file.exists():
             typer.echo(f'File {voices_file} already transcribed.')
             with open(results_json_file, mode='r', encoding='utf-8') as f:
