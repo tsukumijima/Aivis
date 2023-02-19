@@ -117,4 +117,7 @@ def PrepareText(text: str) -> str:
     # 同じ文字が4文字以上続いていたら (例: ～～～～～～～～！！)、2文字にする (例: ～～！！)
     text = re.sub(r'(.)\1{3,}', r'\1\1', text)
 
+    # 中間にある空白文字 (半角/全角の両方) を 、に置換する
+    text = re.sub(r'[ 　]', '、', text)
+
     return text
