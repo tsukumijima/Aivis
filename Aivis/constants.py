@@ -6,7 +6,7 @@ from pathlib import Path
 # 各データの保存先ディレクトリ
 BASE_DIR = Path(__file__).resolve().parent.parent
 SOURCES_DIR = BASE_DIR / '01-Sources'
-PREPARE_SOURCES_DIR = BASE_DIR / '02-PrepareSources'
+PREPARE_SOURCES_DIR = BASE_DIR / '02-PreparedSources'
 SEGMENTS_DIR = BASE_DIR / '03-Segments'
 DATASETS_DIR = BASE_DIR / '04-Datasets'
 

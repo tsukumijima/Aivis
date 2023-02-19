@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "712823935d81b75b689550f482b2030b6dc2eaadc8a0dd9fbd2827fd2904dcd6"
+            "sha256": "161f40e078c0cc988bd06764f19e461dcc43703d53c03553cf388fe08a66c784"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -357,7 +357,7 @@
                 "sha256:f271f90005064c49b47a93f456dc6cf0a21d21ef835bd33ac1e0db10ad51f84f",
                 "sha256:f67b7306fd00d55f271009335cecadc506d144205c7891070aad889928d85750"
             ],
-            "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+            "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2'",
             "version": "==0.29.33"
         },
         "demucs": {
@@ -413,10 +413,6 @@
             "markers": "python_full_version >= '3.7.0'",
             "version": "==0.1.11"
         },
-        "efficient-whisper": {
-            "git": "https://github.com/tsukumijima/efficient_whisper.git",
-            "ref": "c471b45e4971b04517eba2974fc91578021dfcef"
-        },
         "einops": {
             "hashes": [
                 "sha256:6f6c78739316a2e3ccbce8052310497e69da092935e4173f2e76ec4e3a336a35",
@@ -459,7 +455,7 @@
             "hashes": [
                 "sha256:34a17436ed1e96697a86f9de3d15a3b0be01d8bc8de9c1dffd59fb8234ed5307"
             ],
-            "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+            "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2'",
             "version": "==0.18.3"
         },
         "gast": {
@@ -996,13 +992,6 @@
             "markers": "python_version >= '3.6'",
             "version": "==2.3.0"
         },
-        "openai-whisper": {
-            "hashes": [
-                "sha256:31adf9353bf0e3f891b6618896f22c65cf78cd6f845a4d5b7125aa5102187f79"
-            ],
-            "markers": "python_version >= '3.7'",
-            "version": "==20230124"
-        },
         "openunmix": {
             "hashes": [
                 "sha256:63245c39dc0d3bcada94370fe84aca3e053e7facd91d66d26ccb36744ae22e9d",
@@ -1282,7 +1271,7 @@
                 "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86",
                 "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2'",
             "version": "==2.8.2"
         },
         "pytz": {
@@ -1615,7 +1604,7 @@
                 "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926",
                 "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2'",
             "version": "==1.16.0"
         },
         "sortedcollections": {
@@ -1645,8 +1634,8 @@
             "version": "==0.12.1"
         },
         "stable-ts": {
-            "git": "https://github.com/jianfch/stable-ts.git",
-            "ref": "0b423391e115abcb8b8fdbb581b75f5b1fc746d3"
+            "git": "https://github.com/tsukumijima/stable-ts.git",
+            "ref": "e230765f1b023901fb9e61e0463e79a069a44361"
         },
         "submitit": {
             "hashes": [
@@ -1969,6 +1958,10 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==0.38.4"
+        },
+        "whisper": {
+            "git": "https://github.com/tsukumijima/efficient_whisper.git",
+            "ref": "3edd36328d279cd3f3cecf9c528cdbde82ed4c25"
         },
         "wrapt": {
             "hashes": [

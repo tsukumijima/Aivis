@@ -21,6 +21,6 @@ fi
 docker run --gpus all -it --rm \
     -v ${BASE_DIR}/.cache:/root/.cache \
     -v ${BASE_DIR}/01-Sources:/code/01-Sources \
-    -v ${BASE_DIR}/02-PrepareSources:/code/02-PrepareSources \
+    -v ${BASE_DIR}/02-PreparedSources:/code/02-PreparedSources \
     -v ${BASE_DIR}/03-Segments:/code/03-Segments \
     -v ${BASE_DIR}/04-Datasets:/code/04-Datasets aivis $@

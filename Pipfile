@@ -4,16 +4,16 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-efficient-whisper = {ref = "c471b45e4971b04517eba2974fc91578021dfcef", git = "https://github.com/tsukumijima/efficient_whisper.git"}
 demucs = "~=4.0.0"
 inaspeechsegmenter = "~=0.7.6"
 pydub = "~=0.25.1"
-stable-ts = {ref = "0b423391e115abcb8b8fdbb581b75f5b1fc746d3", git = "https://github.com/jianfch/stable-ts.git"}
+stable-ts = {ref = "e230765f1b023901fb9e61e0463e79a069a44361", git = "https://github.com/tsukumijima/stable-ts.git"}
 torch = "~=1.13.1"
 torchaudio = "~=0.13.1"
 torchtext = "~=0.14.1"
 torchvision = "~=0.14.1"
 typer = {extras = ["all"], version = "~=0.7.0"}
+whisper = {ref = "3edd36328d279cd3f3cecf9c528cdbde82ed4c25", git = "https://github.com/tsukumijima/efficient_whisper.git"}
 
 [dev-packages]
 

@@ -2,6 +2,6 @@ _/
 .cache/
 .venv/
 01-Sources/
-02-PrepareSources/
+02-PreparedSources/
 03-Segments/
 04-Datasets/

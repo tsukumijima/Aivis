@@ -9,7 +9,6 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-import efficient_whisper
 import json
 import stable_whisper
 import torch
@@ -39,7 +38,7 @@ def segment(
 
     # Demucs V4 (htdemucs_ft) で AI 音源分離を行い、音声ファイルからボイスのみを抽出する
     ## 本来は楽曲をボーカル・ドラム・ベース・その他に音源分離するための AI だが、これを応用して BGM・SE・ノイズなどを大部分除去できる
-    ## Demucs でボーカル (=ボイス) のみを抽出したファイルは 02-PrepareSources/(音声ファイル名).wav に出力される
+    ## Demucs でボーカル (=ボイス) のみを抽出したファイルは 02-PreparedSources/(音声ファイル名).wav に出力される
     ## すでに抽出済みのファイルがある場合は音源分離は行われず、すでに抽出済みのファイルを使用する
     voices_files = demucs.ExtractVoices(source_files, constants.PREPARE_SOURCES_DIR)
 
@@ -48,10 +47,8 @@ def segment(
 
     # Whisper の学習済みモデルをロード
     ## 一旦 CPU としてロードしてから CUDA に変更すると、メモリ使用量が大幅に削減されるらしい…
-    ## stable-ts (stable_whisper.modify_model()) 向けにロードしたモデルを変更する
     typer.echo('Whisper model loading...')
-    model = efficient_whisper.load_model(model_name.value, device='cpu')
-    stable_whisper.modify_model(model)  # type: ignore
+    model = stable_whisper.load_model(model_name.value, device='cpu')
     typer.echo('Whisper model loaded.')
 
     # 学習済みモデルを JIT にコンパイル
@@ -72,13 +69,14 @@ def segment(
         typer.echo('=' * utils.GetTerminalColumnSize())
 
         # 出力先フォルダを作成
-        ## すでに存在している場合は生成済みなのでスキップ
+        ## すでに存在している場合は生成済みなのでスキップ (ただし、フォルダの中身が空の場合はスキップしない)
         ## もしもう一度生成したい場合はフォルダを削除すること
         folder = constants.SEGMENTS_DIR / voices_file.name.split('.')[0]
-        if folder.exists():
+        if folder.exists() and len(list(folder.glob('*.*'))) > 0:
             typer.echo(f'Folder {folder} already exists. Skip.')
             continue
         folder.mkdir(parents=True, exist_ok=True)
+        typer.echo(f'Folder {folder} created.')
 
         # すでに音声認識データ (JSON) がある場合はそのデータを使い、新規の音声認識は行わない
         finalized_results = []
