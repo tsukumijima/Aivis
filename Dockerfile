@@ -41,6 +41,10 @@ COPY ./Pipfile ./Pipfile.lock /code/
 ENV PIPENV_VENV_IN_PROJECT true
 RUN pipenv sync
 
+# /root/.keras/ から /root/.cache/ にシンボリックリンクを貼る
+## ホスト側の .cache/ に inaSpeechSegmenter の学習済みモデルを保存できるようにする
+RUN cd /root/ && ln -s .cache/ .keras
+
 # ソースコードをコピー
 COPY ./ /code/
 
