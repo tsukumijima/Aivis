@@ -137,9 +137,15 @@ def segment(
             output_audio_file = folder / f'Voices-{count:04d}.wav'
             output_transcription_file = folder / f'Voices-{count:04d}.txt'
 
-            # 書き起こし結果を下処理し、より最適なテキストにする
+            # 書き起こし結果を下処理し、よりデータセットとして最適な形にする
             transcription = prepare.PrepareText(result['text'])
             typer.echo(f'File {output_audio_file} Transcription: {transcription}')
+
+            # (句読点含めて) 書き起こし結果が4文字未満だった場合、データセットにするには短すぎるためスキップする
+            ## 例: そう。
+            if len(transcription) < 4:
+                typer.echo(f'File {output_audio_file} skipped. (Transcription length < 4 characters)')
+                continue
 
             # 一文ごとに切り出した (セグメント化した) 音声ファイルを出力
             ## result['end'] を使うと文の末尾が切れることがあるため、次の文の開始位置を使う
