@@ -8,7 +8,7 @@ ENV TZ=Asia/Tokyo
 # apt-get に対話的に設定を確認されないための設定
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Python 3.10・FFmpeg・SoX・ESPnet の動作に必要な各種ソフトのインストール
+# Python 3.10・SoX・ESPnet の動作に必要な各種ソフトのインストール
 ## ref: https://github.com/espnet/espnet/blob/master/docker/prebuilt/runtime.dockerfile
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl git software-properties-common tzdata wget && \
     add-apt-repository ppa:deadsnakes/ppa && \
@@ -18,7 +18,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
         python3.10 \
         python3.10-distutils \
         python3.10-venv \
-        ffmpeg \
         sox \
         automake \
         autoconf \
@@ -44,6 +43,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     apt-get -y clean && \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf /tmp/*
+
+# 2023/01/31 時点での最新版 (master ブランチ) の FFmpeg をインストール
+## 2023/02 時点では、master 版の FFmpeg でないと、ffmpeg-normalize で3秒以下の音声を正常にノーマライズできない
+## (下記の修正パッチがまだリリースされていないため)
+## ref: https://github.com/FFmpeg/FFmpeg/commit/36572a0c1d12459cb0fddf6ff8023b79ffa2e100
+## ref: https://github.com/slhck/ffmpeg-normalize/issues/87
+RUN curl -LO \
+    https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-01-31-12-37/ffmpeg-N-109734-g806ecace91-linux64-gpl-shared.tar.xz && \
+    tar -xvf ffmpeg-N-109734-g806ecace91-linux64-gpl-shared.tar.xz && \
+    cp -ar ffmpeg-N-109734-g806ecace91-linux64-gpl-shared/bin/* /usr/bin/ && \
+    cp -ar ffmpeg-N-109734-g806ecace91-linux64-gpl-shared/lib/* /usr/lib/ && \
+    rm -rf ffmpeg-N-109734-g806ecace91-linux64-gpl-shared && \
+    rm -rf ffmpeg-N-109734-g806ecace91-linux64-gpl-shared.tar.xz
 
 # コンテナ内での作業ディレクトリを指定
 WORKDIR /code/
