@@ -99,18 +99,16 @@ def ExtractVoices(file_paths: list[Path], output_dir: Path) -> list[Path]:
             transformer = sox.Transformer()
             transformer.silence(
                 location = 0,  # ファイル全体の無音区間を削除
-                silence_threshold = 0.01,  # 無音区間と判断するしきい値
+                silence_threshold = 0,  # 無音区間と判断するしきい値
                 min_silence_duration = 2,  # 2 秒以上続く無音区間を削除
                 buffer_around_silence = True,  # 削除された無音領域の周囲に min_silence_duration 分のバッファを残す
             ).build(str(output_file_path_temp), str(output_file_path))
 
             # 一時ファイルを削除する
-            #output_file_path_temp.unlink()
+            output_file_path_temp.unlink()
 
             output_file_paths.append(output_file_path)
             typer.echo(f'File saved: {output_file_path}')
-
-    typer.echo('=' * utils.GetTerminalColumnSize())
 
     # 今後の処理で別の AI を実行できるよう、GPU の VRAM を解放する
     del model
