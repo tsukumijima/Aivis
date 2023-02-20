@@ -96,13 +96,19 @@ def segment(
                 beam_size = 5,
                 fp16 = True,
                 verbose = True,
+                # initial_prompt (呪文) を指定することで、書き起こし後のテキストのスタイルをある程度制御できるらしい…？
+                ## 書き起こしに句読点が含まれやすくなるように調整しているが、付かないこともある…
+                ## ref: https://github.com/openai/whisper/discussions/194
+                ## ref: https://github.com/openai/whisper/discussions/204
+                ## ref: https://github.com/openai/whisper/discussions/328
+                initial_prompt = '次の文章は、アニメの物語の書き起こしです。必ず句読点をつけてください。',
             )
 
             # 音声認識結果のタイムスタンプを調整し、ファイナライズする
             finalized_results = stable_whisper.finalize_segment_word_ts(results)
             finalized_results = [dict(text = ''.join(i), start = j[0]['start'], end = j[-1]['end']) for i, j in finalized_results]
 
-            # 音声認識結果をファイルに保存
+            # 音声認識結果をファイルに出力
             with open(results_json_file, mode='w', encoding='utf-8') as f:
                 json.dump(finalized_results, f, indent=4, ensure_ascii=False, allow_nan=True)
 
