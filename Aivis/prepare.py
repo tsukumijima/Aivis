@@ -1,6 +1,6 @@
 
 import re
-import subprocess
+from ffmpeg_normalize import FFmpegNormalize
 from inaSpeechSegmenter import Segmenter
 from pathlib import Path
 from pydub import AudioSegment
@@ -27,7 +27,7 @@ def GetAudioFileDuration(file_path: Path) -> float:
 
 def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end_min: float, end_max: float) -> None:
     """
-    音声ファイルの一部を切り出して保存する
+    音声ファイルの一部を切り出して出力する
 
     Args:
         src_file_path (Path): 切り出し元の音声ファイルのパス
@@ -77,22 +77,24 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end_m
     sliced_audio = AudioSegment.from_file(dst_file_path)
     new_sliced_audio = sliced_audio[0:sliced_end * 1000]
 
-    # 音声ファイルを保存する
-    ## 一旦一時ファイルに保存したあと、FFmpeg で 44.1kHz 16bit モノラルの wav 形式に変換する
-    ## 基本この時点で 44.1kHz 16bit にはなっているはずだが、音声チャンネルはステレオのままなので、ここでモノラルに変換する
-    ## これでデータセット用の一文ごとの音声ファイルが完成する
+    # 音声ファイルを出力する
+    ## 一旦一時ファイルに出力したあと、FFmpeg で 44.1kHz 16bit モノラルの wav 形式に変換する
+    ## 基本この時点で 44.1kHz 16bit にはなっているはずだが、音声チャンネルはステレオのままなので、ここでモノラルにダウンミックスする
+    ## さらに音声ファイルの音量をノーマライズし、よりデータセットにふさわしい形にする
+    ## これでデータセット向けの一文ごとの音声ファイルが完成する
     dst_file_path_temp = dst_file_path.with_suffix('.temp.wav')
     new_sliced_audio.export(dst_file_path_temp, format='wav')
-    subprocess.run(
-        [
-            'ffmpeg', '-y',
-            '-i', str(dst_file_path_temp),
-            '-ac', '1', '-ar', '44100', '-acodec', 'pcm_s16le',
-            str(dst_file_path),
-        ],
-        stdout = subprocess.DEVNULL,
-        stderr = subprocess.DEVNULL,
+    normalize = FFmpegNormalize(
+        target_level = -14,  # -14LUFS にノーマライズする (YouTube が -14LUFS なのを参考にした)
+        sample_rate = 44100,
+        audio_codec = 'pcm_s16le',
+        extra_output_options = ['-ac', '1'],
+        output_format = 'wav',
     )
+    normalize.add_media_file(str(dst_file_path_temp), str(dst_file_path))
+    normalize.run_normalization()
+
+    # 一時ファイルを削除
     dst_file_path_temp.unlink()
 
 
