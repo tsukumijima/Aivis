@@ -6,6 +6,8 @@ from pathlib import Path
 from pydub import AudioSegment
 from typing import cast, Literal
 
+from Aivis import utils
+
 
 def GetAudioFileDuration(file_path: Path) -> float:
     """
@@ -36,6 +38,9 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end_m
         end_min (float): 切り出し終了時間 (最小) (秒)
         end_max (float): 切り出し終了時間 (最大) (秒)
     """
+
+    # 開始時刻ちょうどから切り出すと子音が切れてしまうことがあるため、開始時刻の 0.1 秒前から切り出す
+    start = max(0, start - 0.1)
 
     # 音声ファイルを読み込む
     audio = AudioSegment.from_file(src_file_path)
@@ -70,6 +75,7 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end_m
             sliced_end = no_energy_segment[0]
 
     print(f'End Time (Min): {sliced_end_min:.3f} / End Time (Max): {sliced_end_max:.3f} / Confirmed End Time: {sliced_end:.3f}')
+    print(f'Segment Range: {utils.SecondToTimeCode(start)} - {utils.SecondToTimeCode(start + sliced_end)}')
 
     # 改めて音声ファイルを切り出す
     ## 開始位置の調整は不要なので、切り出し終了時間のみを指定する
@@ -101,6 +107,7 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end_m
 def PrepareText(text: str) -> str:
     """
     Whisper で書き起こされたテキストをより適切な形に前処理する
+    (Whisper の書き起こし結果にはガチャがあり、句読点が付く場合と付かない場合があるため、前処理が必要)
 
     Args:
         text (str): Whisper で書き起こされたテキスト
