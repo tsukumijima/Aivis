@@ -8,8 +8,9 @@ ENV TZ=Asia/Tokyo
 # apt-get に対話的に設定を確認されないための設定
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Python 3.10 と FFmpeg のインストール
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl git software-properties-common tzdata && \
+# Python 3.10・FFmpeg・SoX・ESPnet の動作に必要な各種ソフトのインストール
+## ref: https://github.com/espnet/espnet/blob/master/docker/prebuilt/runtime.dockerfile
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl git software-properties-common tzdata wget && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
@@ -17,7 +18,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
         python3.10 \
         python3.10-distutils \
         python3.10-venv \
-        ffmpeg && \
+        ffmpeg \
+        sox \
+        automake \
+        autoconf \
+        apt-utils \
+        bc \
+        build-essential \
+        cmake \
+        flac \
+        gawk \
+        gfortran \
+        libboost-all-dev \
+        libtool \
+        libbz2-dev \
+        liblzma-dev \
+        libsndfile1-dev \
+        patch \
+        python2.7 \
+        subversion \
+        unzip \
+        zip \
+        zlib1g-dev && \
     apt-get -y autoremove && \
     apt-get -y clean && \
     rm -rf /var/lib/apt/lists/* && \

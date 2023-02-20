@@ -5,8 +5,10 @@ name = "pypi"
 
 [packages]
 demucs = "~=4.0.0"
+ffmpeg-normalize = "~=1.26.4"
 inaspeechsegmenter = "~=0.7.6"
 pydub = "~=0.25.1"
+sox = "~=1.4.1"
 stable-ts = {ref = "e230765f1b023901fb9e61e0463e79a069a44361", git = "https://github.com/tsukumijima/stable-ts.git"}
 torch = "~=1.13.1"
 torchaudio = "~=0.13.1"

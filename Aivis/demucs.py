@@ -1,6 +1,7 @@
 
 # https://github.com/facebookresearch/demucs/blob/main/demucs/separate.py をベースに改変したもの
 
+import sox
 import torch
 import typer
 from demucs.apply import apply_model
@@ -16,7 +17,7 @@ from Aivis import utils
 
 def ExtractVoices(file_paths: list[Path], output_dir: Path) -> list[Path]:
     """
-    音声ファイルからボイスのみを抽出 (BGM などは除去) して保存する
+    音声ファイルからボイスのみを抽出 (BGM などは除去) して出力する
 
     Args:
         file_paths (list[Path]): ファイルパスのリスト
@@ -83,11 +84,29 @@ def ExtractVoices(file_paths: list[Path], output_dir: Path) -> list[Path]:
 
         for source, name in zip(sources, model.sources):
 
-            # Demucs はほかにもドラムやベース、それ以外などに分離/抽出してくれるが、ここでは vocals のみを保存する
+            # Demucs はほかにもドラムやベース、それ以外などに分離/抽出してくれるが、ここでは vocals のみを出力する
             if name != 'vocals':
                 continue
 
-            save_audio(source, str(output_file_path), **kwargs)
+            # 一旦ファイルに出力する
+            output_file_path_temp = output_file_path.with_suffix('.temp.wav')
+            save_audio(source, str(output_file_path_temp), **kwargs)
+
+            # SoX を使って 2 秒以上続く無音区間を削除する
+            ## 無音区間を削除することで、Whisper での処理時間短縮と精度向上が期待できる
+            ## ref: http://mkplan.com/memo/2016/03/05/395/
+            ## ref: https://zenn.dev/piruty/articles/2022-08-13_remove-silence-by-sox
+            transformer = sox.Transformer()
+            transformer.silence(
+                location = 0,  # ファイル全体の無音区間を削除
+                silence_threshold = 0.01,  # 無音区間と判断するしきい値
+                min_silence_duration = 2,  # 2 秒以上続く無音区間を削除
+                buffer_around_silence = True,  # 削除された無音領域の周囲に min_silence_duration 分のバッファを残す
+            ).build(str(output_file_path_temp), str(output_file_path))
+
+            # 一時ファイルを削除する
+            #output_file_path_temp.unlink()
+
             output_file_paths.append(output_file_path)
             typer.echo(f'File saved: {output_file_path}')
 

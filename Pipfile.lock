@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "161f40e078c0cc988bd06764f19e461dcc43703d53c03553cf388fe08a66c784"
+            "sha256": "3123e34d3b5ff310725dd0ffe8f30028ba6a047e0ab9e99da043b43b543e379a"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -236,7 +236,16 @@
                 "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44",
                 "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"
             ],
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6'",
             "version": "==0.4.6"
+        },
+        "colorlog": {
+            "hashes": [
+                "sha256:0d33ca236784a1ba3ff9c532d4964126d8a2c44f1f0cb1d2b0728196f512f662",
+                "sha256:bd94bd21c1e13fac7bd3153f4bc3a7dc0eb0974b8bc2fdf1a989e474f6e582e5"
+            ],
+            "markers": "python_version >= '3.6'",
+            "version": "==6.7.0"
         },
         "commonmark": {
             "hashes": [
@@ -357,7 +366,7 @@
                 "sha256:f271f90005064c49b47a93f456dc6cf0a21d21ef835bd33ac1e0db10ad51f84f",
                 "sha256:f67b7306fd00d55f271009335cecadc506d144205c7891070aad889928d85750"
             ],
-            "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2'",
+            "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==0.29.33"
         },
         "demucs": {
@@ -421,6 +430,22 @@
             "markers": "python_version >= '3.7'",
             "version": "==0.6.0"
         },
+        "ffmpeg-normalize": {
+            "hashes": [
+                "sha256:6e22a6cc035a2cbed5a58b66cc992c236d570d3f5055cfe9b8430cd4fcd89c33",
+                "sha256:e10c21a9d0aeaa34b83d64facb0f5f78d41db2f605288db59d90443b78dbc033"
+            ],
+            "index": "pypi",
+            "version": "==1.26.4"
+        },
+        "ffmpeg-progress-yield": {
+            "hashes": [
+                "sha256:aedf908351fdb793c2e1cca2b3dc6ec9ff26c9fc562e44eadda0fcdfe3b8aa60",
+                "sha256:f8fe0bc342cbe443e18b68ccb3e3067f5211ead0331cbfd7adbb50a7a9f00d57"
+            ],
+            "markers": "python_version >= '3.8'",
+            "version": "==0.7.0"
+        },
         "ffmpeg-python": {
             "hashes": [
                 "sha256:65225db34627c578ef0e11c8b1eb528bb35e024752f6f10b78c011f6f64c4127",
@@ -455,7 +480,7 @@
             "hashes": [
                 "sha256:34a17436ed1e96697a86f9de3d15a3b0be01d8bc8de9c1dffd59fb8234ed5307"
             ],
-            "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2'",
+            "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==0.18.3"
         },
         "gast": {
@@ -1271,7 +1296,7 @@
                 "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86",
                 "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2'",
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==2.8.2"
         },
         "pytz": {
@@ -1604,7 +1629,7 @@
                 "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926",
                 "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2'",
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==1.16.0"
         },
         "sortedcollections": {
@@ -1632,6 +1657,14 @@
                 "sha256:e8e1017b2cf1dda767aef19d2fd9ee5ebe07e050d430f77a0a7c66ba08b8cdae"
             ],
             "version": "==0.12.1"
+        },
+        "sox": {
+            "hashes": [
+                "sha256:2458c8e71e229e7fb1a088874ad07906e0aedfb2874a6c4f0430efd6e7587129",
+                "sha256:b0f2d13692450b889cd3f66127e96f801942ec2aac5bb21653dfd150e0d71055"
+            ],
+            "index": "pypi",
+            "version": "==1.4.1"
         },
         "stable-ts": {
             "git": "https://github.com/tsukumijima/stable-ts.git",

@@ -19,10 +19,6 @@ SOURCE_FILE_EXTENSIONS = [
     '.ts',
 ]
 
-class DeviceType(str, Enum):
-    cpu = 'cpu'
-    cuda = 'cuda'
-
 class ModelNameType(str, Enum):
     small = 'small'
     medium = 'medium'
