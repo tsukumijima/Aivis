@@ -11,8 +11,6 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import json
-import stable_whisper
-import torch
 import typer
 from typing import Any, cast
 
@@ -21,7 +19,14 @@ from Aivis import constants
 from Aivis import demucs
 from Aivis import prepare
 from Aivis import utils
+from Aivis import whisper
 
+
+# TODO: （）や【】「」で囲われたトランスクリプトが出る場合があるので、それを除外する
+# それらで囲われた部分を除去してから、トランスクリプトが全滅した場合にスキップとか
+# TODO: 後のセグメントの開始時刻が前のセグメントの終了時刻よりも前にならないようにする
+# TODO: 開始時刻と終了時刻が同じ書き起こしはだいたいおかしいのでスキップ
+# TODO: 句読点が連続しないようにする
 
 app = typer.Typer()
 
@@ -70,61 +75,10 @@ def segment(
         # Whisper で音声認識を実行
         else:
 
-            # Whisper の推論を高速化し、メモリ使用率を下げて VRAM 8GB でも large-v2 モデルを使用できるようにする
-            ## 学習済みモデルのロードには時間がかかるので、本来であれば一度ロードしたモデルを再利用するべきだが、
-            ## そうすると inaSpeechSegmenter の実行時に VRAM 8GB な GPU だと Out of memory になってしまうため、
-            ## やむを得ず毎回モデルをロードしている
-            ## ref: https://qiita.com/halhorn/items/d2672eee452ba5eb6241
+            # 音声認識を実行し、タイムスタンプなどが調整された音声認識結果を取得する
+            finalized_results = whisper.Transcribe(model_name, voices_file)
 
-            # Whisper の学習済みモデルをロード
-            ## 一旦 CPU としてロードしてから CUDA に変更すると、メモリ使用量が大幅に削減されるらしい…
-            typer.echo('-' * utils.GetTerminalColumnSize())
-            typer.echo('Whisper model loading...')
-            model = stable_whisper.load_model(model_name.value, device='cpu')
-            typer.echo('Whisper model loaded.')
-
-            # 学習済みモデルを JIT にコンパイル
-            typer.echo('Whisper model compiling...')
-            model.encoder = torch.jit.script(model.encoder)  # type: ignore
-            model.decoder = torch.jit.script(model.decoder)  # type: ignore
-            typer.echo('Whisper model compiled.')
-
-            # 推論の高速化 & メモリ使用量の削減
-            typer.echo('Run model.half() ...')
-            _ = model.half()
-            typer.echo('Run model.half() done.')
-            typer.echo('Run model.cuda() ...')
-            _ = model.cuda()
-            typer.echo('Run model.cuda() done.')
-
-            # 音声認識を開始
-            typer.echo('-' * utils.GetTerminalColumnSize())
-            typer.echo(f'File {voices_file} transcribing...')
-            typer.echo('-' * utils.GetTerminalColumnSize())
-            results = model.transcribe(
-                str(voices_file),
-                language = 'japanese',
-                beam_size = 5,
-                fp16 = True,
-                verbose = True,
-                # initial_prompt (呪文) を指定することで、書き起こし後のテキストのスタイルをある程度制御できるらしい…？
-                ## 書き起こしに句読点が含まれやすくなるように調整しているが、付かないこともある…
-                ## ref: https://github.com/openai/whisper/discussions/194
-                ## ref: https://github.com/openai/whisper/discussions/204
-                ## ref: https://github.com/openai/whisper/discussions/328
-                initial_prompt = '次の文章は、アニメの物語の書き起こしです。必ず句読点をつけてください。',
-            )
-
-            # GPU のメモリを解放する
-            del model
-            torch.cuda.empty_cache()
-            typer.echo(f'File {voices_file} transcribed.')
-
-            # 音声認識結果のタイムスタンプを調整し、ファイナライズする
-            finalized_results_ = stable_whisper.finalize_segment_word_ts(results)
-            finalized_results = [dict(text = ''.join(i), start = j[0]['start'], end = j[-1]['end']) for i, j in finalized_results_]
-
-            # 音声認識結果をファイルに出力
+            # 音声認識結果をファイルに出力する
             with open(results_json_file, mode='w', encoding='utf-8') as f:
                 json.dump(finalized_results, f, indent=4, ensure_ascii=False, allow_nan=True)
 

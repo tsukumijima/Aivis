@@ -2,14 +2,8 @@
 # https://github.com/facebookresearch/demucs/blob/main/demucs/separate.py をベースに改変したもの
 
 import sox
-import torch
 import typer
-from demucs.apply import apply_model
-from demucs.audio import save_audio
-from demucs.pretrained import get_model
-from demucs.repo import ModelLoadingError
-from demucs.separate import load_track
-from dora.log import fatal
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 from Aivis import utils
@@ -26,6 +20,34 @@ def ExtractVoices(file_paths: list[Path], output_dir: Path) -> list[Path]:
     Returns:
         list[Path]: 出力されたファイルパスのリスト
     """
+
+    # Demucs での推論終了時に確実に VRAM を解放するため、マルチプロセスで実行する
+    ## 終了を待機するため本来はマルチプロセスにする意味はないが、異なるプロセスにすることで
+    ## プロセス終了時に確実に VRAM を解放することができる
+    ## del model でもある程度解放できるが、完全に解放されるわけではないみたい…
+    with ProcessPoolExecutor(max_workers=1) as executor:
+        return executor.submit(__ExtractVoicesMultiProcess, file_paths, output_dir).result()
+
+
+def __ExtractVoicesMultiProcess(file_paths: list[Path], output_dir: Path) -> list[Path]:
+    """
+    ProcessPoolExecutor で実行される ExtractVoices() の実処理
+
+    Args:
+        file_paths (list[Path]): ファイルパスのリスト
+        output_dir (Path): 出力先のフォルダ
+
+    Returns:
+        list[Path]: 出力されたファイルパスのリスト
+    """
+
+    import torch
+    from demucs.apply import apply_model
+    from demucs.audio import save_audio
+    from demucs.pretrained import get_model
+    from demucs.repo import ModelLoadingError
+    from demucs.separate import load_track
+    from dora.log import fatal
 
     # 学習済みモデルを読み込む
     typer.echo('Demucs model loading...')
@@ -110,7 +132,7 @@ def ExtractVoices(file_paths: list[Path], output_dir: Path) -> list[Path]:
             output_file_paths.append(output_file_path)
             typer.echo(f'File saved: {output_file_path}')
 
-    # 今後の処理で別の AI を実行できるよう、GPU の VRAM を解放する
+    # GPU の VRAM を解放する
     del model
     torch.cuda.empty_cache()
 

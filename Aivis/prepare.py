@@ -1,7 +1,7 @@
 
 import re
+from concurrent.futures import ProcessPoolExecutor
 from ffmpeg_normalize import FFmpegNormalize
-from inaSpeechSegmenter import Segmenter
 from pathlib import Path
 from pydub import AudioSegment
 from typing import cast, Literal
@@ -58,10 +58,9 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end_m
     sliced_end_max = end_max - start
 
     # inaSpeechSegmenter で無音区間を検出する
-    ## 'sm' は入力信号を音声区間 (speeech) / 音楽区間 (music) / 無音区間 (noEnergy) にラベル付けしてくれる
-    ## ref: https://qiita.com/shimajiroxyz/items/de213cd333e7bf846781
-    segmenter = Segmenter(vad_engine='sm', detect_gender=False)
-    segments = cast(list[tuple[Literal['speech', 'music', 'noEnergy'], float, float]], segmenter(str(dst_file_path)))
+    ## inaSpeechSegmenter での推論終了時に確実に VRAM を解放するため、マルチプロセスで実行する
+    with ProcessPoolExecutor(max_workers=1) as executor:
+        segments = executor.submit(__RunInaSpeechSegmenter, dst_file_path).result()
 
     # まず無音区間の開始時間、終了時間だけを抽出する
     no_energy_segments = [(segment[1], segment[2]) for segment in segments if segment[0] == 'noEnergy']
@@ -102,6 +101,29 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end_m
 
     # 一時ファイルを削除
     dst_file_path_temp.unlink()
+
+
+def __RunInaSpeechSegmenter(audio_file: Path) -> list[tuple[Literal['speech', 'music', 'noEnergy'], float, float]]:
+    """
+    inaSpeechSegmenter を実行し、結果を取得する
+    VRAM を確実に解放するため、マルチプロセスで実行される
+
+    Args:
+        audio_file (Path): 音声ファイルのパス
+
+    Returns:
+        list[tuple[Literal['speech', 'music', 'noEnergy'], float, float]]: inaSpeechSegmenter の処理結果
+    """
+
+    from inaSpeechSegmenter import Segmenter
+
+    # inaSpeechSegmenter で無音区間を検出する
+    ## 'sm' は入力信号を音声区間 (speeech) / 音楽区間 (music) / 無音区間 (noEnergy) にラベル付けしてくれる
+    ## ref: https://qiita.com/shimajiroxyz/items/de213cd333e7bf846781
+    segmenter = Segmenter(vad_engine='sm', detect_gender=False)
+    segments = cast(list[tuple[Literal['speech', 'music', 'noEnergy'], float, float]], segmenter(str(audio_file)))
+
+    return segments
 
 
 def PrepareText(text: str) -> str:
