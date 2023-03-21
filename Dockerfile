@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     apt-get install -y --no-install-recommends \
         curl \
         python3.10 \
+        python3.10-dev \
         python3.10-distutils \
         python3.10-venv \
         sox \
