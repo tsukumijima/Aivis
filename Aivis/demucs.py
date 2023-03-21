@@ -39,13 +39,11 @@ def __ExtractVoicesMultiProcess(file_paths: list[Path], output_dir: Path) -> lis
     """
 
     import torch
+    from demucs.repo import AnyModel
     from stable_whisper.audio import demucs_audio
     from stable_whisper.audio import load_demucs_model
 
-    # 学習済みモデルを読み込む
-    typer.echo('Demucs model loading...')
-    demucs_model = load_demucs_model()
-    typer.echo('Demucs model loaded.')
+    demucs_model: AnyModel | None = None
 
     # 出力されたファイルパスのリスト (すでに抽出済みのファイルも含む)
     output_file_paths: list[Path] = []
@@ -61,6 +59,13 @@ def __ExtractVoicesMultiProcess(file_paths: list[Path], output_dir: Path) -> lis
             typer.echo(f'File {file_path} is already separated.')
             output_file_paths.append(output_file_path)
             continue
+
+        # 学習済みモデルを読み込む (初回のみ)
+        if demucs_model is None:
+            typer.echo('Demucs model loading...')
+            demucs_model = load_demucs_model()
+            typer.echo('Demucs model loaded.')
+            typer.echo('-' * utils.GetTerminalColumnSize())
 
         # 音源分離を実行する
         # 戻り値として torch.Tensor が返るが、今のところ使っていない

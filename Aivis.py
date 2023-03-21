@@ -7,7 +7,6 @@ warnings.simplefilter(action='ignore', category=RuntimeWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 
 import json
-import numpy
 import stable_whisper
 import typer
 import whisper
@@ -27,7 +26,6 @@ def segment(
     model_name: constants.ModelNameType = typer.Option('large-v2', help='Model name.'),
     force_transcribe: bool = typer.Option(False, help='Force Whisper to transcribe audio files.'),
 ):
-    typer.echo('=' * utils.GetTerminalColumnSize())
 
     # 01-Sources フォルダ以下のメディアファイルを取得
     ## 拡張子は .wav / .mp3 / .m4a / .mp4 / .ts
@@ -113,7 +111,7 @@ def segment(
                 vad = True,
                 # Whisper 本体の設定パラメータ (whisper.decoding.DecodingOptions)
                 language = 'Japanese',  # 日本語
-                temperature = 0.2,  # 低い値に固定してランダム性を抑える
+                temperature = (0.0, 0.2, 0.4, 0.6),  # 低い値にしてランダム性を抑える
                 suppress_tokens = '-1',
                 fp16 = True,
             ))
