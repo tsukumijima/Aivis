@@ -144,24 +144,24 @@ def segment(
             # もし現在処理中のセグメントの最初の単語の長さが 0.5 秒以上だった場合、先頭 0.25 秒を削る
             ## 前のセグメントの最後の発音の母音が含まれてしまう問題の回避策
             ## 日本語の場合単語は基本1文字か2文字になるため、発声時間は 0.5 秒以下になることが多いのを利用している
-            if segment.words[0].duration > 0.5:
+            if segment.words[0].duration >= 0.5:
                 segment_start += 0.25
 
                 # さらに、もし現在処理中のセグメントの最初の単語の長さが 1 秒以上だった場合、
                 # その長さ - 1 秒をさらに削る (最低でも 0.75 秒は残す)
                 ## 例: 3.6 秒ある単語なら、先頭 0.25 秒 + 2.6 秒 = 先頭 2.85 秒を削り、残りの 0.75 秒を出力する
                 ## 1単語の発声に 1 秒以上掛かることはほぼあり得ないため、無音区間が含まれていると判断する
-                if segment.words[0].duration > 1.0:
+                if segment.words[0].duration >= 1.0:
                     segment_start += segment.words[0].duration - 1.0
 
             # もし次のセグメントの最初の単語の長さが 0.5 秒以上だった場合、末尾 0.25 秒を伸ばす
             ## 最後の発音の母音が切れてしまう問題の回避策
-            if index + 1 < len(result.segments) and result.segments[index + 1].words[0].duration > 0.5:
+            if index + 1 < len(result.segments) and result.segments[index + 1].words[0].duration >= 0.5:
                 segment_end += 0.25
 
                 # さらに、もし次のセグメントの最初の単語の長さが 1 秒以上だった場合、
                 # その長さ - 1 秒をさらに伸ばす (最大で 1.0 秒まで伸ばす)
-                if result.segments[index + 1].words[0].duration > 1.0:
+                if result.segments[index + 1].words[0].duration >= 1.0:
                     segment_end += min(result.segments[index + 1].words[0].duration - 1.0, 1.0)
 
             # そうでない場合も、もし次のセグメントの開始位置が現在処理中のセグメントの終了位置よりも後なら、
