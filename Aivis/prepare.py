@@ -1,5 +1,8 @@
 
+import numpy
+import pyloudnorm
 import re
+import soundfile
 from ffmpeg_normalize import FFmpegNormalize
 from pathlib import Path
 from pydub import AudioSegment
@@ -41,29 +44,59 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: 
     audio = AudioSegment.from_file(src_file_path)
 
     # 音声ファイルを切り出す
-    ## 一旦次の文の開始直前までを切り出す
-    ## このあと、無音区間を検出して切り出し終了時間を調整する
     sliced_audio = audio[start * 1000:end * 1000]
-
-    # 音声ファイルを出力する
-    ## 一旦一時ファイルに出力したあと、FFmpeg で 44.1kHz 16bit モノラルの wav 形式に変換する
-    ## 基本この時点で 44.1kHz 16bit にはなっているはずだが、音声チャンネルはステレオのままなので、ここでモノラルにダウンミックスする
-    ## さらに音声ファイルの音量をノーマライズし、よりデータセットにふさわしい形にする
-    ## これでデータセット向けの一文ごとの音声ファイルが完成する
     dst_file_path_temp = dst_file_path.with_suffix('.temp.wav')
     sliced_audio.export(dst_file_path_temp, format='wav')
+
+    # pyloudnorm で音声ファイルをノーマライズ（ラウドネス正規化）する
+    dst_file_path_temp2 = dst_file_path.with_suffix('.temp2.wav')
+    LoudnessNorm(dst_file_path_temp, dst_file_path_temp2, loudness=-23.0)  # -23LUFS にノーマライズする
+
+    # FFmpeg で 44.1kHz 16bit モノラルの wav 形式に変換する
+    ## 基本この時点で 44.1kHz 16bit にはなっているはずだが、音声チャンネルはステレオのままなので、ここでモノラルにダウンミックスする
+    ## さらに念押しでもう一度音声ファイルの音量をノーマライズする (ffmpeg-normalize でノーマライズしようとした名残り)
     normalize = FFmpegNormalize(
-        target_level = -14,  # -14LUFS にノーマライズする (YouTube が -14LUFS なのを参考にした)
+        target_level = -23,  # -23LUFS にノーマライズする
         sample_rate = 44100,
         audio_codec = 'pcm_s16le',
         extra_output_options = ['-ac', '1'],
         output_format = 'wav',
     )
-    normalize.add_media_file(str(dst_file_path_temp), str(dst_file_path))
+    normalize.add_media_file(str(dst_file_path_temp2), str(dst_file_path))
     normalize.run_normalization()
 
     # 一時ファイルを削除
     dst_file_path_temp.unlink()
+    dst_file_path_temp2.unlink()
+
+
+def LoudnessNorm(input: Path, output: Path, peak=-1.0, loudness=-23.0, block_size=0.400) -> None:
+    """
+    音声ファイルに対して、ラウドネス正規化（ITU-R BS.1770-4）を実行する
+    ref: https://github.com/fishaudio/audio-preprocess/blob/main/fish_audio_preprocess/utils/loudness_norm.py#L9-L33
+
+    Args:
+        input: 入力音声ファイル
+        output: 出力音声ファイル
+        peak: 音声をN dBにピーク正規化します. Defaults to -1.0.
+        loudness: 音声をN dB LUFSにラウドネス正規化します. Defaults to -23.0.
+        block_size: ラウドネス測定用のブロックサイズ. Defaults to 0.400. (400 ms)
+
+    Returns:
+        ラウドネス正規化された音声データ
+    """
+
+    # 音声ファイルを読み込む
+    audio, rate = soundfile.read(str(input))
+
+    # ノーマライズを実行
+    audio = pyloudnorm.normalize.peak(audio, peak)
+    meter = pyloudnorm.Meter(rate, block_size=block_size)  # create BS.1770 meter
+    _loudness = meter.integrated_loudness(audio)
+    audio = pyloudnorm.normalize.loudness(audio, _loudness, loudness)
+
+    # 音声ファイルを出力する
+    soundfile.write(str(output), audio, rate)
 
 
 def PrepareText(text: str) -> str:
