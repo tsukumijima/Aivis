@@ -81,8 +81,14 @@ def PrepareText(text: str) -> str:
     # 前後の空白を削除する
     text = text.strip()
 
+    # 半角の ､｡!? を 全角の 、。！？ に置換する
+    text = text.replace('､', '、')
+    text = text.replace('｡', '。')
+    text = text.replace('!', '！')
+    text = text.replace('?', '？')
+
     # 末尾に記号がついていない場合は 。を追加する
-    if text[-1] not in ['、', '。', '!', '?', '！', '？']:
+    if text[-1] not in ['、', '。','！', '？']:
         text = text + '。'
 
     # 同じ文字が4文字以上続いていたら (例: ～～～～～～～～！！)、2文字にする (例: ～～！！)
