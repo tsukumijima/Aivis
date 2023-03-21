@@ -172,6 +172,11 @@ def segment(
                 typer.echo(f'Transcription skipped. (Start time == End time)')
                 continue
 
+             # 出力する音声ファイルの長さが1秒未満になった場合、データセットにするには短すぎるためスキップする
+            if segment_end - segment_start < 1:
+                typer.echo(f'Transcription skipped. (Duration < 1 sec)')
+                continue
+
             # 出力先の音声ファイルのパス
             # 例: 0001_こんにちは.wav
             output_audio_file = folder / f'{count:04d}_{transcription}.wav'
@@ -179,12 +184,6 @@ def segment(
             # 一文ごとに切り出した (セグメント化した) 音声ファイルを出力
             typer.echo(f'Segment Range: {utils.SecondToTimeCode(segment_start)} - {utils.SecondToTimeCode(segment_end)}')
             prepare.SliceAudioFile(voices_file, output_audio_file, segment_start, segment_end)
-
-            # 出力した音声ファイルの長さが1秒未満になった場合、データセットにするには短すぎるためスキップする
-            if prepare.GetAudioFileDuration(output_audio_file) < 1:
-                output_audio_file.unlink()  # 出力した音声ファイルを削除
-                typer.echo(f'Transcription skipped. (Duration < 1 sec)')
-                continue
 
             typer.echo(f'File {output_audio_file} saved.')
             count += 1

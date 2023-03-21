@@ -1,5 +1,4 @@
 
-import numpy
 import pyloudnorm
 import re
 import soundfile
@@ -11,6 +10,7 @@ from pydub import AudioSegment
 def GetAudioFileDuration(file_path: Path) -> float:
     """
     音声ファイルの長さを取得する
+    現在未使用
 
     Args:
         file_path (Path): 音声ファイルのパス
@@ -92,8 +92,11 @@ def LoudnessNorm(input: Path, output: Path, peak=-1.0, loudness=-23.0, block_siz
     # ノーマライズを実行
     audio = pyloudnorm.normalize.peak(audio, peak)
     meter = pyloudnorm.Meter(rate, block_size=block_size)  # create BS.1770 meter
-    _loudness = meter.integrated_loudness(audio)
-    audio = pyloudnorm.normalize.loudness(audio, _loudness, loudness)
+    try:
+        _loudness = meter.integrated_loudness(audio)
+        audio = pyloudnorm.normalize.loudness(audio, _loudness, loudness)
+    except ValueError:
+        pass
 
     # 音声ファイルを出力する
     soundfile.write(str(output), audio, rate)
