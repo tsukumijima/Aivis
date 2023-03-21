@@ -159,13 +159,17 @@ def segment(
             if index + 1 < len(result.segments) and result.segments[index + 1].words[0].duration > 0.5:
                 segment_end += 0.25
 
-                # さらに、もし次のセグメントの最初の単語の長さが 3 秒以上だった場合、
-                # その長さ - 3 秒をさらに伸ばす
-                ## 例: 次のセグメントの最初の単語が 5.25 秒ある場合、末尾 0.25 秒 + 2.25 秒 = 末尾 2.5 秒を伸ばす
-                ## - 3 秒は、次のセグメントの最初の単語の発声に被らないようにするため
-                ## ただし、最大で伸ばすのは 5 秒まで
-                if result.segments[index + 1].words[0].duration > 3.0:
-                    segment_end += min(result.segments[index + 1].words[0].duration - 3.0, 5.0)
+                # さらに、もし次のセグメントの最初の単語の長さが 1 秒以上だった場合、
+                # その長さ - 1 秒をさらに伸ばす (最大で 1.0 秒まで伸ばす)
+                if result.segments[index + 1].words[0].duration > 1.0:
+                    segment_end += min(result.segments[index + 1].words[0].duration - 1.0, 1.0)
+
+            # そうでない場合も、もし次のセグメントの開始位置が現在処理中のセグメントの終了位置よりも後なら、
+            # 現在処理中のセグメントの終了位置を次のセグメントの開始位置に合わせる (最大で 0.5 秒まで伸ばす)
+            elif index + 1 < len(result.segments) and segment_end < result.segments[index + 1].start:
+                segment_end = min(result.segments[index + 1].start, segment_end + 0.5)
+
+            typer.echo(f'Segment Range: {utils.SecondToTimeCode(segment_start)} - {utils.SecondToTimeCode(segment_end)}')
 
             # 開始時刻と終了時刻が同じだった場合、タイムスタンプが正しく取得できていないためスキップする
             if segment_start == segment_end:
@@ -182,7 +186,6 @@ def segment(
             output_audio_file = folder / f'{count:04d}_{transcription}.wav'
 
             # 一文ごとに切り出した (セグメント化した) 音声ファイルを出力
-            typer.echo(f'Segment Range: {utils.SecondToTimeCode(segment_start)} - {utils.SecondToTimeCode(segment_end)}')
             prepare.SliceAudioFile(voices_file, output_audio_file, segment_start, segment_end)
 
             typer.echo(f'File {output_audio_file} saved.')
