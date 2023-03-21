@@ -48,20 +48,20 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: 
     dst_file_path_temp = dst_file_path.with_suffix('.temp.wav')
     sliced_audio.export(dst_file_path_temp, format='wav')
 
-    # pyloudnorm で音声ファイルをノーマライズ（ラウドネス正規化）する
-    dst_file_path_temp2 = dst_file_path.with_suffix('.temp2.wav')
-    LoudnessNorm(dst_file_path_temp, dst_file_path_temp2, loudness=-23.0)  # -23LUFS にノーマライズする
-
     # FFmpeg で 44.1kHz 16bit モノラルの wav 形式に変換する
     ## 基本この時点で 44.1kHz 16bit にはなっているはずだが、音声チャンネルはステレオのままなので、ここでモノラルにダウンミックスする
+    dst_file_path_temp2 = dst_file_path.with_suffix('.temp2.wav')
     subprocess.run([
         'ffmpeg',
-        '-i', str(dst_file_path_temp2),
+        '-i', str(dst_file_path_temp),
         '-ac', '1',
         '-ar', '44100',
         '-acodec', 'pcm_s16le',
-        str(dst_file_path),
+        str(dst_file_path_temp2),
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # pyloudnorm で音声ファイルをノーマライズ（ラウドネス正規化）する
+    LoudnessNorm(dst_file_path_temp2, dst_file_path, loudness=-23.0)  # -23LUFS にノーマライズする
 
     # 一時ファイルを削除
     dst_file_path_temp.unlink()

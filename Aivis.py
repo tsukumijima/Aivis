@@ -165,9 +165,9 @@ def segment(
                     segment_end += min(result.segments[index + 1].words[0].duration - 1.0, 1.0)
 
             # そうでない場合も、もし次のセグメントの開始位置が現在処理中のセグメントの終了位置よりも後なら、
-            # 現在処理中のセグメントの終了位置を次のセグメントの開始位置に合わせる (最大で 0.5 秒まで伸ばす)
+            # 現在処理中のセグメントの終了位置を次のセグメントの開始位置に合わせる (最大で 0.75 秒まで伸ばす)
             elif index + 1 < len(result.segments) and segment_end < result.segments[index + 1].start:
-                segment_end = min(result.segments[index + 1].start, segment_end + 0.5)
+                segment_end = min(result.segments[index + 1].start, segment_end + 0.75)
 
             typer.echo(f'Segment Range: {utils.SecondToTimeCode(segment_start)} - {utils.SecondToTimeCode(segment_end)}')
 
