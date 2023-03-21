@@ -45,18 +45,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     rm -rf /var/lib/apt/lists/* && \
     rm -rf /tmp/*
 
-# 2023/01/31 時点での最新版 (master ブランチ) の FFmpeg をインストール
-## 2023/02 時点では、master 版の FFmpeg でないと、ffmpeg-normalize で3秒以下の音声を正常にノーマライズできない
-## (下記の修正パッチがまだリリースされていないため)
+# FFmpeg 6.0 をインストール
+## FFmpeg 6.0 以降でないと、ffmpeg-normalize で3秒以下の音声を正常にノーマライズできない
+## (下記の修正パッチは FFmpeg 6.0 以降に取り込まれている)
 ## ref: https://github.com/FFmpeg/FFmpeg/commit/36572a0c1d12459cb0fddf6ff8023b79ffa2e100
 ## ref: https://github.com/slhck/ffmpeg-normalize/issues/87
 RUN curl -LO \
-    https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-01-31-12-37/ffmpeg-N-109734-g806ecace91-linux64-gpl-shared.tar.xz && \
-    tar -xvf ffmpeg-N-109734-g806ecace91-linux64-gpl-shared.tar.xz && \
-    cp -ar ffmpeg-N-109734-g806ecace91-linux64-gpl-shared/bin/* /usr/bin/ && \
-    cp -ar ffmpeg-N-109734-g806ecace91-linux64-gpl-shared/lib/* /usr/lib/ && \
-    rm -rf ffmpeg-N-109734-g806ecace91-linux64-gpl-shared && \
-    rm -rf ffmpeg-N-109734-g806ecace91-linux64-gpl-shared.tar.xz
+    https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n6.0-latest-linux64-gpl-shared-6.0.tar.xz && \
+    tar -xvf ffmpeg-n6.0-latest-linux64-gpl-shared-6.0.tar.xz && \
+    cp -ar ffmpeg-n6.0-latest-linux64-gpl-shared-6.0/bin/* /usr/bin/ && \
+    cp -ar ffmpeg-n6.0-latest-linux64-gpl-shared-6.0/lib/* /usr/lib/ && \
+    rm -rf ffmpeg-n6.0-latest-linux64-gpl-shared-6.0 && \
+    rm -rf ffmpeg-n6.0-latest-linux64-gpl-shared-6.0.tar.xz
 
 # コンテナ内での作業ディレクトリを指定
 WORKDIR /code/
