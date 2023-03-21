@@ -5,7 +5,6 @@ name = "pypi"
 
 [packages]
 demucs = "~=4.0.0"
-ffmpeg-normalize = "~=1.26.4"
 pydub = "~=0.25.1"
 pyloudnorm = "~=0.1.1"
 soundfile = "~=0.12.1"

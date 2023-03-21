@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "578c1f9e7619c42de9374ebf19665e467ed7c6ad74ff9cf123c922142e927a32"
+            "sha256": "7a47d01670d58d229a5f173299678427665cb3c4cbb7b2178f2aab0437eb03b0"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -226,14 +226,6 @@
             "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6'",
             "version": "==0.4.6"
         },
-        "colorlog": {
-            "hashes": [
-                "sha256:0d33ca236784a1ba3ff9c532d4964126d8a2c44f1f0cb1d2b0728196f512f662",
-                "sha256:bd94bd21c1e13fac7bd3153f4bc3a7dc0eb0974b8bc2fdf1a989e474f6e582e5"
-            ],
-            "markers": "python_version >= '3.6'",
-            "version": "==6.7.0"
-        },
         "commonmark": {
             "hashes": [
                 "sha256:452f9dc859be7f06631ddcb328b6919c67984aca654e5fefb3914d54691aed60",
@@ -341,22 +333,6 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==0.6.0"
-        },
-        "ffmpeg-normalize": {
-            "hashes": [
-                "sha256:14970482eda9f07570dcd8d897b6a83cc3816ec7c987bc78fc8de7796930d8bc",
-                "sha256:c86ceba4ad3a799373f6c5c0295ad96a79e989526340a98a4b1d4a2e1d7a946c"
-            ],
-            "index": "pypi",
-            "version": "==1.26.6"
-        },
-        "ffmpeg-progress-yield": {
-            "hashes": [
-                "sha256:04e56baa58b86158634f8642fa769da7506e13a4608cfd48fd64d655abfc27cc",
-                "sha256:2f5129b4c030052c496ea2b97316f34d8cbf6d0d3d89e7a536c286f271c9b9bd"
-            ],
-            "markers": "python_version >= '3.8'",
-            "version": "==0.7.2"
         },
         "ffmpeg-python": {
             "hashes": [

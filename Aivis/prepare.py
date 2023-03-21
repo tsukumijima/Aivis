@@ -2,7 +2,7 @@
 import pyloudnorm
 import re
 import soundfile
-from ffmpeg_normalize import FFmpegNormalize
+import subprocess
 from pathlib import Path
 from pydub import AudioSegment
 
@@ -54,16 +54,14 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: 
 
     # FFmpeg で 44.1kHz 16bit モノラルの wav 形式に変換する
     ## 基本この時点で 44.1kHz 16bit にはなっているはずだが、音声チャンネルはステレオのままなので、ここでモノラルにダウンミックスする
-    ## さらに念押しでもう一度音声ファイルの音量をノーマライズする (ffmpeg-normalize でノーマライズしようとした名残り)
-    normalize = FFmpegNormalize(
-        target_level = -23,  # -23LUFS にノーマライズする
-        sample_rate = 44100,
-        audio_codec = 'pcm_s16le',
-        extra_output_options = ['-ac', '1'],
-        output_format = 'wav',
-    )
-    normalize.add_media_file(str(dst_file_path_temp2), str(dst_file_path))
-    normalize.run_normalization()
+    subprocess.run([
+        'ffmpeg',
+        '-i', str(dst_file_path_temp2),
+        '-ac', '1',
+        '-ar', '44100',
+        '-acodec', 'pcm_s16le',
+        str(dst_file_path),
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     # 一時ファイルを削除
     dst_file_path_temp.unlink()
@@ -78,8 +76,8 @@ def LoudnessNorm(input: Path, output: Path, peak=-1.0, loudness=-23.0, block_siz
     Args:
         input: 入力音声ファイル
         output: 出力音声ファイル
-        peak: 音声をN dBにピーク正規化します. Defaults to -1.0.
-        loudness: 音声をN dB LUFSにラウドネス正規化します. Defaults to -23.0.
+        peak: 音声を N dB にピーク正規化する. Defaults to -1.0.
+        loudness: 音声を N dB LUFS にラウドネス正規化する. Defaults to -23.0.
         block_size: ラウドネス測定用のブロックサイズ. Defaults to 0.400. (400 ms)
 
     Returns:
