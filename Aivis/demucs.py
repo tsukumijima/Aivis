@@ -70,13 +70,15 @@ def __ExtractVoicesMultiProcess(file_paths: list[Path], output_dir: Path) -> lis
         # 音源分離を実行する
         # 戻り値として torch.Tensor が返るが、今のところ使っていない
         typer.echo(f'File {file_path} separating...')
+        typer.echo('-' * utils.GetTerminalColumnSize())
         demucs_audio(
             str(file_path),
             model = demucs_model,
             save_path = str(output_file_path),
             device = 'cuda',
-            verbose = False,
+            verbose = True,
         )
+        typer.echo('-' * utils.GetTerminalColumnSize())
         typer.echo(f'File {file_path} separated.')
 
         output_file_paths.append(output_file_path)
