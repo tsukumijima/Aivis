@@ -3,6 +3,7 @@ import pyloudnorm
 import re
 import soundfile
 import subprocess
+import typer
 from pathlib import Path
 from pydub import AudioSegment
 
@@ -26,7 +27,7 @@ def GetAudioFileDuration(file_path: Path) -> float:
     return audio.duration_seconds
 
 
-def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: float) -> None:
+def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: float) -> Path:
     """
     音声ファイルの一部を切り出して出力する
 
@@ -45,14 +46,24 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: 
 
     # 音声ファイルを切り出す
     sliced_audio = audio[start * 1000:end * 1000]
-    dst_file_path_temp = dst_file_path.with_suffix('.temp.wav')
-    sliced_audio.export(dst_file_path_temp, format='wav')
+    dst_file_path_temp = dst_file_path.with_suffix('.1.wav')
+    try:
+        sliced_audio.export(dst_file_path_temp, format='wav')
+    except OSError as ex:
+        # 万が一ファイル名が最大文字数を超える場合は、ファイル名を短くする
+        if ex.errno == 36:
+            dst_file_path = dst_file_path.with_name(dst_file_path.stem[:80] + dst_file_path.suffix)
+            dst_file_path_temp = dst_file_path.with_suffix('.1.wav')
+            typer.echo('Warning: File name is too long. Truncated.')
+            # 再度音声ファイルを切り出す
+            sliced_audio.export(dst_file_path_temp, format='wav')
 
     # FFmpeg で 44.1kHz 16bit モノラルの wav 形式に変換する
     ## 基本この時点で 44.1kHz 16bit にはなっているはずだが、音声チャンネルはステレオのままなので、ここでモノラルにダウンミックスする
-    dst_file_path_temp2 = dst_file_path.with_suffix('.temp2.wav')
+    dst_file_path_temp2 = dst_file_path.with_suffix('.2.wav')
     subprocess.run([
         'ffmpeg',
+        '-y',
         '-i', str(dst_file_path_temp),
         '-ac', '1',
         '-ar', '44100',
@@ -66,6 +77,8 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: 
     # 一時ファイルを削除
     dst_file_path_temp.unlink()
     dst_file_path_temp2.unlink()
+
+    return dst_file_path
 
 
 def LoudnessNorm(input: Path, output: Path, peak=-1.0, loudness=-23.0, block_size=0.400) -> None:

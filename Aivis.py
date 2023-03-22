@@ -186,9 +186,9 @@ def segment(
             output_audio_file = folder / f'{count:04d}_{transcription}.wav'
 
             # 一文ごとに切り出した (セグメント化した) 音声ファイルを出力
-            prepare.SliceAudioFile(voices_file, output_audio_file, segment_start, segment_end)
+            real_output_audio_file = prepare.SliceAudioFile(voices_file, output_audio_file, segment_start, segment_end)
 
-            typer.echo(f'File {output_audio_file} saved.')
+            typer.echo(f'File {real_output_audio_file} saved.')
             count += 1
 
     typer.echo('=' * utils.GetTerminalColumnSize())
