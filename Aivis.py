@@ -67,9 +67,12 @@ def segment(
         # Whisper で音声認識を実行
         else:
 
+            typer.echo('-' * utils.GetTerminalColumnSize())
+            typer.echo(f'File {voices_file} transcribing...')
+            typer.echo('-' * utils.GetTerminalColumnSize())
+
             # Whisper の学習済みモデルをロード (1回のみ)
             if model is None:
-                typer.echo('-' * utils.GetTerminalColumnSize())
                 typer.echo('Whisper model loading...')
                 model = stable_whisper.load_model(
                     model_name.value,
@@ -78,6 +81,7 @@ def segment(
                     dq = False,
                 )
                 typer.echo('Whisper model loaded.')
+                typer.echo('-' * utils.GetTerminalColumnSize())
 
             # Whisper に入力する初期プロンプト (呪文)
             ## Whisper は前の文脈を踏まえて書き起こしてくれるらしいので、書き起こしっぽいものを入れておくと、
@@ -90,9 +94,6 @@ def segment(
             )
 
             # 音声認識を実行し、タイムスタンプなどが調整された音声認識結果を取得する
-            typer.echo('-' * utils.GetTerminalColumnSize())
-            typer.echo(f'File {voices_file} transcribing...')
-            typer.echo('-' * utils.GetTerminalColumnSize())
             result = cast(stable_whisper.WhisperResult, model.transcribe(
                 # 入力元の音声ファイル
                 str(voices_file),

@@ -60,6 +60,9 @@ def __ExtractVoicesMultiProcess(file_paths: list[Path], output_dir: Path) -> lis
             output_file_paths.append(output_file_path)
             continue
 
+        typer.echo(f'File {file_path} separating...')
+        typer.echo('-' * utils.GetTerminalColumnSize())
+
         # 学習済みモデルを読み込む (初回のみ)
         if demucs_model is None:
             typer.echo('Demucs model loading...')
@@ -69,8 +72,6 @@ def __ExtractVoicesMultiProcess(file_paths: list[Path], output_dir: Path) -> lis
 
         # 音源分離を実行する
         # 戻り値として torch.Tensor が返るが、今のところ使っていない
-        typer.echo(f'File {file_path} separating...')
-        typer.echo('-' * utils.GetTerminalColumnSize())
         demucs_audio(
             str(file_path),
             model = demucs_model,
