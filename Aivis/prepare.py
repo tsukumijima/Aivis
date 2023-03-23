@@ -2,6 +2,7 @@
 import pyloudnorm
 import re
 import soundfile
+import shutil
 import subprocess
 import typer
 from pathlib import Path
@@ -38,6 +39,11 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: 
         end (float): 切り出し終了時間 (秒)
     """
 
+    # 一時保存先のテンポラリファイル (/tmp/ 以下)
+    dst_file_path_temp1 = Path('/tmp/tmp_1.wav')
+    dst_file_path_temp2 = Path('/tmp/tmp_2.wav')
+    dst_file_path_temp3 = Path('/tmp/tmp_3.wav')
+
     # 開始時刻ちょうどから切り出すと子音が切れてしまうことがあるため、開始時刻の 0.1 秒前から切り出す
     start = max(0, start - 0.1)
 
@@ -46,25 +52,14 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: 
 
     # 音声ファイルを切り出す
     sliced_audio = audio[start * 1000:end * 1000]
-    dst_file_path_temp = dst_file_path.with_suffix('.1.wav')
-    try:
-        sliced_audio.export(dst_file_path_temp, format='wav')
-    except OSError as ex:
-        # 万が一ファイル名が最大文字数を超える場合は、ファイル名を短くする
-        if ex.errno == 36:
-            dst_file_path = dst_file_path.with_name(dst_file_path.stem[:80] + dst_file_path.suffix)
-            dst_file_path_temp = dst_file_path.with_suffix('.1.wav')
-            typer.echo('Warning: File name is too long. Truncated.')
-            # 再度音声ファイルを切り出す
-            sliced_audio.export(dst_file_path_temp, format='wav')
+    sliced_audio.export(dst_file_path_temp1, format='wav')
 
     # FFmpeg で 44.1kHz 16bit モノラルの wav 形式に変換する
     ## 基本この時点で 44.1kHz 16bit にはなっているはずだが、音声チャンネルはステレオのままなので、ここでモノラルにダウンミックスする
-    dst_file_path_temp2 = dst_file_path.with_suffix('.2.wav')
     subprocess.run([
         'ffmpeg',
         '-y',
-        '-i', str(dst_file_path_temp),
+        '-i', str(dst_file_path_temp1),
         '-ac', '1',
         '-ar', '44100',
         '-acodec', 'pcm_s16le',
@@ -72,11 +67,32 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: 
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     # pyloudnorm で音声ファイルをノーマライズ（ラウドネス正規化）する
-    LoudnessNorm(dst_file_path_temp2, dst_file_path, loudness=-23.0)  # -23LUFS にノーマライズする
+    LoudnessNorm(dst_file_path_temp2, dst_file_path_temp3, loudness=-23.0)  # -23LUFS にノーマライズする
+
+    # 最後にファイルを dst_file_path にコピーする
+    try:
+        shutil.copyfile(dst_file_path_temp3, dst_file_path)
+    except OSError as ex:
+        # 万が一ファイル名が最大文字数を超える場合は、ファイル名を短くする
+        # 87文字は、Linux のファイル名の最大バイト数 (255B) から、拡張子 (.wav) を引いた 251B に入る UTF-8 の最大文字数
+        if ex.errno == 36:
+            # ファイル名を短くした上でコピーする
+            dst_file_path_new = dst_file_path.with_name(dst_file_path.stem[:87] + dst_file_path.suffix)
+            shutil.copyfile(dst_file_path_temp3, dst_file_path_new)
+            typer.echo('Warning: File name is too long. Truncated.')
+            # フルの書き起こし文にアクセスできるように、別途テキストファイルに書き起こし文を保存する
+            with open(dst_file_path_new.with_suffix('.txt'), 'w') as f:
+                transcript = re.sub(r'^\d+_', '', dst_file_path.stem)
+                f.write(transcript)
+            # ファイル名からの書き起こし文の取得が終わったので、dst_file_path を上書きする
+            dst_file_path = dst_file_path_new
+        else:
+            raise ex
 
     # 一時ファイルを削除
-    dst_file_path_temp.unlink()
+    dst_file_path_temp1.unlink()
     dst_file_path_temp2.unlink()
+    dst_file_path_temp3.unlink()
 
     return dst_file_path
 
