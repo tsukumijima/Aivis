@@ -122,6 +122,7 @@ def segment(
 
             # 音声認識に利用したモデルを使い、さらに音声認識結果を調整する
             ## 詳細な設定はよくわからんのでデフォルト値に任せる
+            typer.echo('-' * utils.GetTerminalColumnSize())
             alignment.refine(
                 # 音声認識に利用したモデル
                 model = model,
