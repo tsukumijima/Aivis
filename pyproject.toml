@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "Aivis"
+version = "1.0.0"
+description = "Aivis: AI Voice Imitate System"
+authors = ["tsukumi <tsukumijima@users.noreply.github.com>"]
+# ref: https://github.com/python-poetry/poetry/issues/1537#issuecomment-1154642727
+classifiers = ["Private :: Do Not Upload"]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.12"
+demucs = "^4.0.1"
+pydub = "^0.25.1"
+pyloudnorm = "^0.1.1"
+soundfile = "^0.12.1"
+stable-ts = "^2.13.7"
+typer = {extras = ["all"], version = "^0.7.0"}
+
+[tool.poetry.group.dev.dependencies]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
