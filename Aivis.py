@@ -56,14 +56,14 @@ def segment(
         folder.mkdir(parents=True, exist_ok=True)
         typer.echo(f'Folder {folder} created.')
 
-        result: stable_whisper.WhisperResult
+        transcribe_result: stable_whisper.WhisperResult
         results_json_file = constants.PREPARE_SOURCES_DIR / f'{voices_file.name.split(".")[0]}.json'
 
         # すでに音声認識結果のデータ (JSON) が保存されている場合はそのデータを使い、新規の音声認識は行わない
         ## なお、--force-transcribe オプションが指定されている場合は JSON ファイルが存在するかに関わらず音声認識を実行する
         if results_json_file.exists() and force_transcribe is False:
             typer.echo(f'File {voices_file} already transcribed.')
-            result = stable_whisper.WhisperResult(str(results_json_file))
+            transcribe_result = stable_whisper.WhisperResult(str(results_json_file))
 
         # Whisper で音声認識を実行
         else:
@@ -95,7 +95,7 @@ def segment(
             )
 
             # 音声認識を実行し、タイムスタンプなどが調整された音声認識結果を取得する
-            result = cast(stable_whisper.WhisperResult, model.transcribe(
+            transcribe_result = cast(stable_whisper.WhisperResult, model.transcribe(
                 # 入力元の音声ファイル
                 str(voices_file),
                 # ログをコンソールに出力する
@@ -123,13 +123,13 @@ def segment(
             # 音声認識に利用したモデルを使い、さらに音声認識結果を調整する
             ## 詳細な設定はよくわからんのでデフォルト値に任せる
             typer.echo('-' * utils.GetTerminalColumnSize())
-            alignment.refine(
+            transcribe_result = alignment.refine(
                 # 音声認識に利用したモデル
                 model = model,
                 # 入力元の音声ファイル
                 audio = str(voices_file),
                 # 音声認識結果
-                result = result,
+                result = transcribe_result,
                 # ログをコンソールに出力する
                 verbose = True,
                 # すでに Demucs で音源分離を行っているため、ここでは音源分離を行わない
@@ -140,11 +140,11 @@ def segment(
 
             # 音声認識結果をファイルに出力する
             with open(results_json_file, mode='w', encoding='utf-8') as f:
-                json.dump(result.to_dict(), f, indent=4, ensure_ascii=False, allow_nan=True)
+                json.dump(transcribe_result.to_dict(), f, indent=4, ensure_ascii=False, allow_nan=True)
 
         # 一文ごとに切り出した音声ファイル（ファイル名には書き起こし文が入る）を出力する
         count = 1
-        for index, segment in enumerate(result.segments):
+        for index, segment in enumerate(transcribe_result.segments):
             typer.echo('-' * utils.GetTerminalColumnSize())
 
             # 書き起こし結果を下処理し、よりデータセットとして最適な形にする
@@ -176,18 +176,18 @@ def segment(
 
             # もし次のセグメントの最初の単語の長さが 0.5 秒以上だった場合、末尾 0.25 秒を伸ばす
             ## 最後の発音の母音が切れてしまう問題の回避策
-            if index + 1 < len(result.segments) and result.segments[index + 1].words[0].duration >= 0.5:
+            if index + 1 < len(transcribe_result.segments) and transcribe_result.segments[index + 1].words[0].duration >= 0.5:
                 segment_end += 0.25
 
                 # さらに、もし次のセグメントの最初の単語の長さが 1 秒以上だった場合、
                 # その長さ - 1 秒をさらに伸ばす (最大で 1.0 秒まで伸ばす)
-                if result.segments[index + 1].words[0].duration >= 1.0:
-                    segment_end += min(result.segments[index + 1].words[0].duration - 1.0, 1.0)
+                if transcribe_result.segments[index + 1].words[0].duration >= 1.0:
+                    segment_end += min(transcribe_result.segments[index + 1].words[0].duration - 1.0, 1.0)
 
             # そうでない場合も、もし次のセグメントの開始位置が現在処理中のセグメントの終了位置よりも後なら、
             # 現在処理中のセグメントの終了位置を次のセグメントの開始位置に合わせる (最大で 0.75 秒まで伸ばす)
-            elif index + 1 < len(result.segments) and segment_end < result.segments[index + 1].start:
-                segment_end = min(result.segments[index + 1].start, segment_end + 0.75)
+            elif index + 1 < len(transcribe_result.segments) and segment_end < transcribe_result.segments[index + 1].start:
+                segment_end = min(transcribe_result.segments[index + 1].start, segment_end + 0.75)
 
             typer.echo(f'Segment Range: {utils.SecondToTimeCode(segment_start)} - {utils.SecondToTimeCode(segment_end)}')
 
