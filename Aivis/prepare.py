@@ -1,6 +1,7 @@
 
 import pyloudnorm
 import re
+import regex
 import soundfile
 import shutil
 import subprocess
@@ -144,21 +145,41 @@ def PrepareText(text: str) -> str:
     # 前後の空白を削除する
     text = text.strip()
 
+    # 入力テキストに 1 つでもひらがな・カタカナ・漢字が含まれる場合のみ、日本語として処理する
+    # ref: https://note.nkmk.me/python-re-regex-character-type/
+    is_japanese = False
+    hiragana_katakana_kanji_pattern = regex.compile(r'\p{Hiragana}|\p{Katakana}|\p{Han}')
+    if hiragana_katakana_kanji_pattern.search(text):
+        is_japanese = True
+
     # 半角の ､｡!? を 全角の 、。！？ に置換する
-    text = text.replace('､', '、')
-    text = text.replace('｡', '。')
-    text = text.replace('!', '！')
-    text = text.replace('?', '？')
+    if is_japanese is True:
+        text = text.replace('､', '、')
+        text = text.replace('｡', '。')
+        text = text.replace('!', '！')
+        text = text.replace('?', '？')
+
+    # 全角の 、。！？ の後に半角スペースがある場合は削除する
+    if is_japanese is True:
+        text = text.replace('、 ', '、')
+        text = text.replace('。 ', '。')
+        text = text.replace('！ ', '！')
+        text = text.replace('？ ', '？')
 
     # 末尾に記号がついていない場合は 。を追加する
-    if text[-1] not in ['、', '。','！', '？']:
-        text = text + '。'
+    if is_japanese is True:
+        if text[-1] not in ['、', '。','！', '？']:
+            text = text + '。'
+    else:
+        if text[-1] not in ['.', '!', '?']:
+            text = text + '.'
 
     # 同じ文字が4文字以上続いていたら (例: ～～～～～～～～！！)、2文字にする (例: ～～！！)
     text = re.sub(r'(.)\1{3,}', r'\1\1', text)
 
     # 中間にある空白文字 (半角/全角の両方) を 、に置換する
-    text = re.sub(r'[ 　]', '、', text)
+    if is_japanese is True:
+        text = re.sub(r'[ 　]', '、', text)
 
     # （）や【】「」で囲われた文字列を削除する
     text = re.sub(r'（.*?）', '', text)
@@ -169,6 +190,9 @@ def PrepareText(text: str) -> str:
     text = text.strip()
 
     # 連続する句読点を1つにまとめる
-    text = re.sub(r'([、。！？])\1+', r'\1', text)
+    if is_japanese is True:
+        text = re.sub(r'([、。！？])\1+', r'\1', text)
+    else:
+        text = re.sub(r'([,\.!\?])\1+', r'\1', text)
 
     return text
