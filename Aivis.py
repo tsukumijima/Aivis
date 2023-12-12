@@ -10,7 +10,6 @@ import json
 import stable_whisper
 import typer
 import whisper
-from stable_whisper import alignment
 from typing import cast
 
 from Aivis import __version__
@@ -88,10 +87,9 @@ def segment(
             ## Whisper は前の文脈を踏まえて書き起こしてくれるらしいので、書き起こしっぽいものを入れておくと、
             ## 書き起こしに句読点をつけるよう誘導できるみたい…
             initial_prompt = (
-                'そうだ。今日はピクニックしない？天気もいいし、絶好のピクニック日和だと思う。いいですね。'
-                'では、準備をはじめましょうか。そうしよう！どこに行く？そうですね。三ツ池公園なんか良いんじゃないかな。'
-                '今の時期なら桜が綺麗だしね。じゃあそれで決まり！わかりました。電車だと550円掛かるみたいです。'
-                '少し時間が掛かりますが、歩いた方が健康的かもしれません。'
+                'こんにちは。元気、ですかー？私は……ちゃんと元気だよ！'
+                'そうだ。今日はピクニックしない？天気もいいし、絶好のピクニック日和だと思う。良いっすね！！'
+                'では、早速準備を始めましょう。じゃあそうしようっ！！どこに行く？……そうですね、桜でも見に行きましょうか。'
             )
 
             # 音声認識を実行し、タイムスタンプなどが調整された音声認識結果を取得する
@@ -119,24 +117,6 @@ def segment(
             ))
             typer.echo('-' * utils.GetTerminalColumnSize())
             typer.echo(f'File {voices_file} transcribed.')
-
-            # 音声認識に利用したモデルを使い、さらに音声認識結果を調整する
-            ## 詳細な設定はよくわからんのでデフォルト値に任せる
-            typer.echo('-' * utils.GetTerminalColumnSize())
-            transcribe_result = alignment.refine(
-                # 音声認識に利用したモデル
-                model = model,
-                # 入力元の音声ファイル
-                audio = str(voices_file),
-                # 音声認識結果
-                result = transcribe_result,
-                # ログをコンソールに出力する
-                verbose = True,
-                # すでに Demucs で音源分離を行っているため、ここでは音源分離を行わない
-                demucs = False,
-            )
-            typer.echo('-' * utils.GetTerminalColumnSize())
-            typer.echo(f'File {voices_file} refined.')
 
             # 音声認識結果をファイルに出力する
             with open(results_json_file, mode='w', encoding='utf-8') as f:
