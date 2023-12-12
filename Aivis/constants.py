@@ -19,6 +19,16 @@ SOURCE_FILE_EXTENSIONS = [
     '.ts',
 ]
 
+# スキップする Whisper のハルシネーション避けのワード
+SKIP_TRANSCRIPTIONS = [
+    '視聴ありがとう',
+    '視聴頂き',
+    '視聴いただき',
+    '視聴下さ',
+    '視聴くださ',
+    'チャンネル登録',
+]
+
 class ModelNameType(str, Enum):
     small = 'small'
     medium = 'medium'

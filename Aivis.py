@@ -33,7 +33,7 @@ def segment(
     source_files = sorted(list(constants.SOURCES_DIR.glob('**/*.*')))
     source_files = [i for i in source_files if i.suffix in constants.SOURCE_FILE_EXTENSIONS]
 
-    # Demucs V4 (htdemucs) で AI 音源分離を行い、音声ファイルからボイスのみを抽出する
+    # Demucs V4 (htdemucs_ft) で AI 音源分離を行い、音声ファイルからボイスのみを抽出する
     ## 本来は楽曲をボーカル・ドラム・ベース・その他に音源分離するための AI だが、これを応用して BGM・SE・ノイズなどを大部分除去できる
     ## Demucs でボーカル (=ボイス) のみを抽出したファイルは 02-PreparedSources/(音声ファイル名).wav に出力される
     ## すでに抽出済みのファイルがある場合は音源分離は行われず、すでに抽出済みのファイルを使用する
@@ -83,18 +83,20 @@ def segment(
                 typer.echo('-' * utils.GetTerminalColumnSize())
 
             # Whisper に入力する初期プロンプト (呪文)
-            ## Whisper は前の文脈を踏まえて書き起こしてくれるらしいので、書き起こしっぽいものを入れておくと、
+            ## Whisper は前の文脈を踏まえて書き起こしてくれるらしいので、会話文の書き起こしっぽいものを入れておくと、
             ## 書き起こしに句読点をつけるよう誘導できるみたい…
             initial_prompt = (
-                'そうだ。今日はピクニックしない…？天気もいいし、絶好のピクニック日和だと思う！良いですね！行きましょう…！'
-                'じゃあ早速、荷物の準備しておきますね。そうだね！どこに行く？そうですね…。桜の見える公園なんかどうでしょう…？'
-                'おー！今の時期は桜が綺麗だしね。じゃあそれで決まりっ！わかりました。電車だと550円掛かるみたいです。'
-                '少し時間が掛かりますが、歩いた方が健康的かもしれません。え〜歩くのきついよぉ…。'
+                'そうだ。今日はピクニックしない…？天気もいいし、絶好のピクニック日和だと思う！ 良いですね！行きましょう…！'
+                'じゃあ早速、荷物の準備しておきますね。 そうだね！どこに行く？ そうですね…。桜の見える公園なんかどうでしょう…？'
+                'おー！今の時期は桜が綺麗だしね。じゃあそれで決まりっ！ 分かりました。調べたところ、電車だと550円掛かるみたいです。'
+                '少し時間が掛かりますが、歩いた方が健康的かもしれません。 え〜！歩くのはきついよぉ…。'
             )
 
             # 音声認識を実行し、タイムスタンプなどが調整された音声認識結果を取得する
             # ref: https://qiita.com/reriiasu/items/5ad8e1a7dbc425de7bb0
             # ref: https://zenn.dev/tsuzukia/articles/1381e6c9a88577
+            # ref: https://note.com/asahi_ictrad/n/nf3ca329f17df
+            model.transcribe
             transcribe_result: stable_whisper.WhisperResult = cast(Any, model).transcribe_stable(
                 # 入力元の音声ファイル
                 str(voices_file),
@@ -114,13 +116,18 @@ def segment(
                 # faster-whisper 本体の設定パラメータ
                 # 日本語
                 language = 'ja',
-                # temperature を低い値にしてランダム性を抑える
-                ## あまり下げすぎると結果がぶっ壊れるので注意
-                temperature = (0.0, 0.2, 0.4, 0.6, 0.8),
+                # beam_size (1 に設定して CER を下げる)
+                beam_size = 1,
+                # 謎のパラメータ (10 に設定すると temperature を下げたことで上がる repetition を抑えられるらしい？)
+                no_repeat_ngram_size = 10,
+                # temperature (0.0 に設定して CER を下げる)
+                temperature = 0.0,
+                # 前回の音声チャンクの出力結果を次のウインドウのプロンプトに設定しない
+                condition_on_previous_text = False,
                 # 初期プロンプト
                 initial_prompt = initial_prompt,
                 # faster-whisper 側で VAD を使った無音フィルタリングを行う
-                vad_filter=True,
+                vad_filter = True,
             )
             typer.echo('-' * utils.GetTerminalColumnSize())
             typer.echo(f'File {voices_file} transcribed.')
@@ -137,6 +144,12 @@ def segment(
             # 書き起こし結果を下処理し、よりデータセットとして最適な形にする
             transcription = prepare.PrepareText(segment.text)
             typer.echo(f'Transcription: {transcription}')
+
+            # Whisper は無音区間とかがあると「視聴頂きありがとうございました」「チャンネル登録よろしく」などの謎のハルシネーションが発生するので、
+            # そういう系の書き起こし結果があった場合はスキップする
+            if transcription in constants.SKIP_TRANSCRIPTIONS:
+                typer.echo(f'Transcription skipped. (Transcription is in SKIP_TRANSCRIPTIONS)')
+                continue
 
             # (句読点含めて) 書き起こし結果が4文字未満だった場合、データセットにするには短すぎるためスキップする
             ## 例: そう。/ まじ？ / あ。
