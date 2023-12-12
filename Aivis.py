@@ -7,10 +7,10 @@ warnings.simplefilter(action='ignore', category=RuntimeWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 
 import json
+import faster_whisper
 import stable_whisper
 import typer
-import whisper
-from typing import cast
+from typing import Any, cast
 
 from Aivis import __version__
 from Aivis import constants
@@ -39,7 +39,7 @@ def segment(
     ## すでに抽出済みのファイルがある場合は音源分離は行われず、すでに抽出済みのファイルを使用する
     voices_files = demucs.ExtractVoices(source_files, constants.PREPARE_SOURCES_DIR)
 
-    model: whisper.Whisper | None = None
+    model: faster_whisper.WhisperModel | None = None
 
     # ここからは各音声ファイルごとにループ
     for voices_file in voices_files:
@@ -74,11 +74,10 @@ def segment(
             # Whisper の学習済みモデルをロード (1回のみ)
             if model is None:
                 typer.echo('Whisper model loading...')
-                model = stable_whisper.load_model(
+                model = stable_whisper.load_faster_whisper(
                     model_name.value,
                     device = 'cuda',
-                    cpu_preload = True,
-                    dq = False,
+                    compute_type = 'auto',
                 )
                 typer.echo('Whisper model loaded.')
                 typer.echo('-' * utils.GetTerminalColumnSize())
@@ -87,19 +86,22 @@ def segment(
             ## Whisper は前の文脈を踏まえて書き起こしてくれるらしいので、書き起こしっぽいものを入れておくと、
             ## 書き起こしに句読点をつけるよう誘導できるみたい…
             initial_prompt = (
-                'こんにちは。元気、ですかー？私は……ちゃんと元気だよ！'
-                'そうだ。今日はピクニックしない？天気もいいし、絶好のピクニック日和だと思う。良いっすね！！'
-                'では、早速準備を始めましょう。じゃあそうしようっ！！どこに行く？……そうですね、桜でも見に行きましょうか。'
+                'そうだ。今日はピクニックしない…？天気もいいし、絶好のピクニック日和だと思う！良いですね！行きましょう…！'
+                'じゃあ早速、荷物の準備しておきますね。そうだね！どこに行く？そうですね…。桜の見える公園なんかどうでしょう…？'
+                'おー！今の時期は桜が綺麗だしね。じゃあそれで決まりっ！わかりました。電車だと550円掛かるみたいです。'
+                '少し時間が掛かりますが、歩いた方が健康的かもしれません。え〜歩くのきついよぉ…。'
             )
 
             # 音声認識を実行し、タイムスタンプなどが調整された音声認識結果を取得する
-            transcribe_result = cast(stable_whisper.WhisperResult, model.transcribe(
+            # ref: https://qiita.com/reriiasu/items/5ad8e1a7dbc425de7bb0
+            # ref: https://zenn.dev/tsuzukia/articles/1381e6c9a88577
+            transcribe_result: stable_whisper.WhisperResult = cast(Any, model).transcribe_stable(
                 # 入力元の音声ファイル
                 str(voices_file),
+                # 単語ごとのタイムスタンプを出力する
+                word_timestamps = True,
                 # ログをコンソールに出力する
                 verbose = True,
-                # 初期プロンプト
-                initial_prompt = initial_prompt,
                 # 単語セグメントの再グループ化を行わない
                 ## 日本語の場合、再グループ化を行うと、話者を跨いで同じ一区切りにされてしまうことがあるなど
                 ## 今回の用途には適さないため、再グループ化を行わないようにしている
@@ -109,12 +111,17 @@ def segment(
                 demucs = False,
                 # Silero VAD を使用してタイムスタンプ抑制マスクを生成する
                 vad = True,
-                # Whisper 本体の設定パラメータ (whisper.decoding.DecodingOptions)
-                language = 'Japanese',  # 日本語
-                temperature = (0.0, 0.2, 0.4, 0.6),  # 低い値にしてランダム性を抑える
-                suppress_tokens = '-1',
-                fp16 = True,
-            ))
+                # faster-whisper 本体の設定パラメータ
+                # 日本語
+                language = 'ja',
+                # temperature を低い値にしてランダム性を抑える
+                ## あまり下げすぎると結果がぶっ壊れるので注意
+                temperature = (0.0, 0.2, 0.4, 0.6, 0.8),
+                # 初期プロンプト
+                initial_prompt = initial_prompt,
+                # faster-whisper 側で VAD を使った無音フィルタリングを行う
+                vad_filter=True,
+            )
             typer.echo('-' * utils.GetTerminalColumnSize())
             typer.echo(f'File {voices_file} transcribed.')
 

@@ -97,7 +97,7 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: 
     return dst_file_path
 
 
-def LoudnessNorm(input: Path, output: Path, peak=-1.0, loudness=-23.0, block_size=0.400) -> None:
+def LoudnessNorm(input: Path, output: Path, peak: float = -1.0, loudness: float = -23.0, block_size : float = 0.400) -> None:
     """
     音声ファイルに対して、ラウドネス正規化（ITU-R BS.1770-4）を実行する
     ref: https://github.com/fishaudio/audio-preprocess/blob/main/fish_audio_preprocess/utils/loudness_norm.py#L9-L33

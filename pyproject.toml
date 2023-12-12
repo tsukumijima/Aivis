@@ -6,13 +6,25 @@ authors = ["tsukumi <tsukumijima@users.noreply.github.com>"]
 # ref: https://github.com/python-poetry/poetry/issues/1537#issuecomment-1154642727
 classifiers = ["Private :: Do Not Upload"]
 
+# faster-whisper が動的にシステム上の libcudnn_ops_infer.so.8 をロードしようとしてエラーになるので、
+# 事前に .venv/ 以下のライブラリへ LD_LIBRARY_PATH を通しておく
+# ref: https://github.com/SYSTRAN/faster-whisper/issues/153#issuecomment-1510218906
+[tool.taskipy.tasks]
+Aivis = "LD_LIBRARY_PATH=`python3 -c 'import os; import nvidia.cublas.lib; import nvidia.cudnn.lib; print(os.path.dirname(nvidia.cublas.lib.__file__) + \":\" + os.path.dirname(nvidia.cudnn.lib.__file__))'` python Aivis.py"
+
 [tool.poetry.dependencies]
 python = ">=3.11,<3.12"
 demucs = "^4.0.1"
+faster-whisper = "^0.10.0"
+nvidia-cublas-cu11 = "^11.11.3.6"
 pydub = "^0.25.1"
 pyloudnorm = "^0.1.1"
 soundfile = "^0.12.1"
 stable-ts = "^2.13.7"
+taskipy = "^1.12.2"
+torch = "^2.1.1"
+torchaudio = "^2.1.1"
+torchvision = "^0.16.1"
 typer = {extras = ["all"], version = "^0.7.0"}
 
 [tool.poetry.group.dev.dependencies]
