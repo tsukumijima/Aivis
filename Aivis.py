@@ -23,7 +23,7 @@ app = typer.Typer()
 
 @app.command()
 def segment(
-    model_name: constants.ModelNameType = typer.Option('large-v2', help='Model name.'),
+    model_name: constants.ModelNameType = typer.Option('large-v3', help='Model name.'),
     force_transcribe: bool = typer.Option(False, help='Force Whisper to transcribe audio files.'),
 ):
 
