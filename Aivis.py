@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# FutureWarning・RuntimeWarning・UserWarning を抑制する
+# FutureWarning / RuntimeWarning / UserWarning を抑制する
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
@@ -10,6 +10,7 @@ import json
 import stable_whisper
 import typer
 import whisper
+from stable_whisper import alignment
 from typing import cast
 
 from Aivis import __version__
@@ -118,6 +119,23 @@ def segment(
             ))
             typer.echo('-' * utils.GetTerminalColumnSize())
             typer.echo(f'File {voices_file} transcribed.')
+
+            # 音声認識に利用したモデルを使い、さらに音声認識結果を調整する
+            ## 詳細な設定はよくわからんのでデフォルト値に任せる
+            alignment.refine(
+                # 音声認識に利用したモデル
+                model = model,
+                # 入力元の音声ファイル
+                audio = str(voices_file),
+                # 音声認識結果
+                result = result,
+                # ログをコンソールに出力する
+                verbose = True,
+                # すでに Demucs で音源分離を行っているため、ここでは音源分離を行わない
+                demucs = False,
+            )
+            typer.echo('-' * utils.GetTerminalColumnSize())
+            typer.echo(f'File {voices_file} refined.')
 
             # 音声認識結果をファイルに出力する
             with open(results_json_file, mode='w', encoding='utf-8') as f:
