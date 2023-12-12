@@ -1,6 +1,6 @@
 
-# CUDA 11.7 (Runtime Ubuntu 20.04) をベースイメージとして利用
-FROM nvidia/cuda:11.7.0-cudnn8-runtime-ubuntu20.04
+# CUDA 12.1.1 (CUDNN8 Runtime Ubuntu 20.04) をベースイメージとして利用
+FROM nvcr.io/nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu20.04
 
 # タイムゾーンを東京に設定
 ENV TZ=Asia/Tokyo
@@ -8,17 +8,16 @@ ENV TZ=Asia/Tokyo
 # apt-get に対話的に設定を確認されないための設定
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Python 3.10・SoX・ESPnet の動作に必要な各種ソフトのインストール
-## ref: https://github.com/espnet/espnet/blob/master/docker/prebuilt/runtime.dockerfile
+# Python 3.11 と動作に必要な各種ソフトのインストール
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl git software-properties-common tzdata wget && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
         curl \
-        python3.10 \
-        python3.10-dev \
-        python3.10-distutils \
-        python3.10-venv \
+        python3.11 \
+        python3.11-dev \
+        python3.11-distutils \
+        python3.11-venv \
         sox \
         automake \
         autoconf \
@@ -46,10 +45,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     rm -rf /tmp/*
 
 # FFmpeg 6.0 をインストール
-## FFmpeg 6.0 以降でないと、ffmpeg-normalize で3秒以下の音声を正常にノーマライズできない
-## (下記の修正パッチは FFmpeg 6.0 以降に取り込まれている)
-## ref: https://github.com/FFmpeg/FFmpeg/commit/36572a0c1d12459cb0fddf6ff8023b79ffa2e100
-## ref: https://github.com/slhck/ffmpeg-normalize/issues/87
 RUN curl -LO \
     https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n6.0-latest-linux64-gpl-shared-6.0.tar.xz && \
     tar -xvf ffmpeg-n6.0-latest-linux64-gpl-shared-6.0.tar.xz && \
@@ -63,18 +58,17 @@ WORKDIR /code/
 
 # pip をインストール
 ## python3-pip だと Python 3.8 ベースの pip がインストールされるため、get-pip.py でインストールする
-RUN curl https://bootstrap.pypa.io/get-pip.py | python3.10
+RUN curl https://bootstrap.pypa.io/get-pip.py | python3.11
 
-# pipenv をインストール
-RUN pip install pipenv
+# poetry をインストール
+RUN pip install poetry
 
-# 依存パッケージリスト (Pipfile/Pipfile.lock) だけをコピー
-COPY ./Pipfile ./Pipfile.lock /code/
+# Poetry の依存パッケージリストだけをコピー
+COPY ./pyproject.toml ./poetry.lock ./poetry.toml /code/
 
-# 依存パッケージを pipenv でインストール
-## 仮想環境 (.venv) をプロジェクト直下に作成する
-ENV PIPENV_VENV_IN_PROJECT true
-RUN pipenv sync
+# 依存パッケージを poetry でインストール
+RUN poetry env use 3.11 && \
+    poetry install --only main --no-root
 
 # /root/.keras/ から /root/.cache/ にシンボリックリンクを貼る
 ## ホスト側の .cache/ に inaSpeechSegmenter の学習済みモデルを保存できるようにする
@@ -84,4 +78,4 @@ RUN cd /root/ && ln -s .cache/ .keras
 COPY ./ /code/
 
 # Aivis.py をエントリーポイントとして指定
-ENTRYPOINT ["pipenv", "run", "python", "Aivis.py"]
+ENTRYPOINT ["poetry", "run", "python", "Aivis.py"]
