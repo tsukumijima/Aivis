@@ -223,7 +223,7 @@ def create_segments(
 @app.command()
 def create_datasets(
     segments_dir_name: Annotated[str, typer.Argument(help='Segments directory name.')],
-    speaker_name: Annotated[list[str], typer.Option(help='Speaker name. (Multiple OK)')] = [],
+    speaker_names: Annotated[str, typer.Argument(help='Speaker name. (Comma separated)')],
 ):
 
     typer.echo('=' * utils.GetTerminalColumnSize())
@@ -233,14 +233,14 @@ def create_datasets(
         typer.echo(f'Error: {segments_dir_name} is not directory.')
         typer.echo('=' * utils.GetTerminalColumnSize())
         return
-    if len(speaker_name) == 0:
+    if speaker_names == '':
         typer.echo(f'Error: Speaker names is empty.')
         typer.echo('=' * utils.GetTerminalColumnSize())
         return
 
     # 出力後のデータセットの出力先ディレクトリを作成
-    speaker_names = speaker_name
-    for speaker in speaker_names:
+    speaker_name_list = speaker_names.split(',')
+    for speaker in speaker_name_list:
         output_dir = constants.DATASETS_DIR / speaker
         # すでにディレクトリが存在している場合は削除
         if output_dir.exists():
@@ -277,10 +277,10 @@ def create_datasets(
     current_index = 0
 
     # セレクトボックスの選択肢
-    choices = ['このセグメントをデータセットから除外する'] + speaker_name
+    choices = ['このセグメントをデータセットから除外する'] + speaker_name_list
 
     # 出力ファイルの連番
-    output_audio_count = 1
+    output_audio_count: dict[str, int] = { speaker: 1 for speaker in speaker_name_list }
 
     def OnClick(
         segment_audio_path_str: str,
@@ -302,8 +302,8 @@ def create_datasets(
             ## Gradio の謎機能で、GUI でトリムした編集後の一次ファイルが segment_audio_path_str として渡されてくる
             audio_output_dir = constants.DATASETS_DIR / speaker_name / 'audios' / 'wavs'
             audio_output_dir.mkdir(parents=True, exist_ok=True)
-            output_path = audio_output_dir / f'{output_audio_count:04}.wav'
-            output_audio_count += 1  # 連番をインクリメント
+            output_path = audio_output_dir / f'{output_audio_count[speaker_name]:04}.wav'
+            output_audio_count[speaker_name] += 1  # 連番をインクリメント
             shutil.copyfile(segment_audio_path, output_path)
             typer.echo(f'File {output_path} saved.')
 
