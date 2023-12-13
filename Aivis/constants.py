@@ -20,7 +20,7 @@ SOURCE_FILE_EXTENSIONS = [
 ]
 
 # スキップする Whisper のハルシネーション避けのワード
-SKIP_TRANSCRIPTIONS = [
+SKIP_TRANSCRIPTS = [
     '視聴ありがとう',
     '視聴頂き',
     '視聴いただき',

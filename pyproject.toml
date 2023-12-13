@@ -16,6 +16,7 @@ Aivis = "LD_LIBRARY_PATH=`python3 -c 'import os; import nvidia.cublas.lib; impor
 python = ">=3.11,<3.12"
 demucs = "^4.0.1"
 faster-whisper = "^0.10.0"
+gradio = "^4.8.0"
 nvidia-cublas-cu11 = "^11.11.3.6"
 pydub = "^0.25.1"
 pyloudnorm = "^0.1.1"
@@ -26,7 +27,7 @@ taskipy = "^1.12.2"
 torch = "^2.1.1"
 torchaudio = "^2.1.1"
 torchvision = "^0.16.1"
-typer = {extras = ["all"], version = "^0.7.0"}
+typer = {extras = ["all"], version = "^0.9.0"}
 
 [tool.poetry.group.dev.dependencies]
 

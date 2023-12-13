@@ -6,11 +6,15 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 
-import json
 import faster_whisper
+import gradio as gr
+import json
+import shutil
 import stable_whisper
+import sys
 import typer
-from typing import Any, cast
+from pathlib import Path
+from typing import Annotated, Any, cast
 
 from Aivis import __version__
 from Aivis import constants
@@ -22,9 +26,9 @@ from Aivis import utils
 app = typer.Typer()
 
 @app.command()
-def segmentation(
-    model_name: constants.ModelNameType = typer.Option('large-v3', help='Model name.'),
-    force_transcribe: bool = typer.Option(False, help='Force Whisper to transcribe audio files.'),
+def create_segments(
+    model_name: Annotated[constants.ModelNameType, typer.Option(help='Model name.')] = constants.ModelNameType.large_v3,
+    force_transcribe: Annotated[bool, typer.Option(help='Force Whisper to transcribe audio files.')] = False,
 ):
 
     # 01-Sources フォルダ以下のメディアファイルを取得
@@ -73,7 +77,7 @@ def segmentation(
 
             # Whisper の学習済みモデルをロード (1回のみ)
             if model is None:
-                typer.echo('Whisper model loading...')
+                typer.echo(f'Whisper model loading... (Model: {model_name.value})')
                 model = stable_whisper.load_faster_whisper(
                     model_name.value,
                     device = 'cuda',
@@ -142,19 +146,19 @@ def segmentation(
             typer.echo('-' * utils.GetTerminalColumnSize())
 
             # 書き起こし結果を下処理し、よりデータセットとして最適な形にする
-            transcription = prepare.PrepareText(segment.text)
-            typer.echo(f'Transcription: {transcription}')
+            transcript = prepare.PrepareText(segment.text)
+            typer.echo(f'Transcript: {transcript}')
 
             # Whisper は無音区間とかがあると「視聴頂きありがとうございました」「チャンネル登録よろしく」などの謎のハルシネーションが発生するので、
             # そういう系の書き起こし結果があった場合はスキップする
-            if transcription in constants.SKIP_TRANSCRIPTIONS:
-                typer.echo(f'Transcription skipped. (Transcription is in SKIP_TRANSCRIPTIONS)')
+            if transcript in constants.SKIP_TRANSCRIPTS:
+                typer.echo(f'Transcript skipped. (Transcript is in SKIP_TRANSCRIPTS)')
                 continue
 
             # (句読点含めて) 書き起こし結果が4文字未満だった場合、データセットにするには短すぎるためスキップする
             ## 例: そう。/ まじ？ / あ。
-            if len(transcription) < 4:
-                typer.echo(f'Transcription skipped. (Transcription length < 4 characters)')
+            if len(transcript) < 4:
+                typer.echo(f'Transcript skipped. (Transcript length < 4 characters)')
                 continue
 
             # セグメントの開始時間と終了時間を取得
@@ -193,17 +197,17 @@ def segmentation(
 
             # 開始時刻と終了時刻が同じだった場合、タイムスタンプが正しく取得できていないためスキップする
             if segment_start == segment_end:
-                typer.echo(f'Transcription skipped. (Start time == End time)')
+                typer.echo(f'Transcript skipped. (Start time == End time)')
                 continue
 
              # 出力する音声ファイルの長さが1秒未満になった場合、データセットにするには短すぎるためスキップする
             if segment_end - segment_start < 1:
-                typer.echo(f'Transcription skipped. (Duration < 1 sec)')
+                typer.echo(f'Transcript skipped. (Duration < 1 sec)')
                 continue
 
             # 出力先の音声ファイルのパス
             # 例: 0001_こんにちは.wav
-            output_audio_file = folder / f'{count:04d}_{transcription}.wav'
+            output_audio_file = folder / f'{count:04d}_{transcript}.wav'
 
             # 一文ごとに切り出した (セグメント化した) 音声ファイルを出力
             real_output_audio_file = prepare.SliceAudioFile(voices_file, output_audio_file, segment_start, segment_end)
@@ -214,6 +218,153 @@ def segmentation(
     typer.echo('=' * utils.GetTerminalColumnSize())
     typer.echo('All files segmentation done.')
     typer.echo('=' * utils.GetTerminalColumnSize())
+
+
+@app.command()
+def create_datasets(
+    segments_dir_name: Annotated[str, typer.Argument(help='Segments directory name.')],
+    speaker_name: Annotated[list[str], typer.Option(help='Speaker name. (Multiple OK)')] = [],
+):
+
+    typer.echo('=' * utils.GetTerminalColumnSize())
+
+    # バリデーション
+    if (constants.SEGMENTS_DIR / segments_dir_name).exists() is False:
+        typer.echo(f'Error: {segments_dir_name} is not directory.')
+        typer.echo('=' * utils.GetTerminalColumnSize())
+        return
+    if len(speaker_name) == 0:
+        typer.echo(f'Error: Speaker names is empty.')
+        typer.echo('=' * utils.GetTerminalColumnSize())
+        return
+
+    # 出力後のデータセットの出力先ディレクトリを作成
+    speaker_names = speaker_name
+    for speaker in speaker_names:
+        output_dir = constants.DATASETS_DIR / speaker
+        # すでにディレクトリが存在している場合は削除
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+        # ディレクトリを作成
+        output_dir.mkdir(parents=True)
+        typer.echo(f'Speaker: {speaker} / Folder: {output_dir} created.')
+    typer.echo('=' * utils.GetTerminalColumnSize())
+
+    # 03-Segments/(指定されたディレクトリ名、通常は音声ファイル名と同じ) フォルダ以下のセグメント化された音声ファイルを取得
+    ## 拡張子は .wav
+    ## glob() の結果は順序がバラバラなのでアルファベット順にソートする
+    segment_audio_paths = sorted(list((constants.SEGMENTS_DIR / segments_dir_name).glob('**/*.wav')))
+
+    # 音声ファイル名から書き起こし文を取得
+    ## 例: 0001_こんにちは.wav -> こんにちは
+    segment_audio_transcripts: list[str] = []
+    for segment_audio_path in segment_audio_paths:
+
+        # 拡張子なしファイル名から _ より後の部分を取得
+        segment_audio_transcript = segment_audio_path.stem.split('_')[1]
+
+        # 1文が長すぎてファイル名が最大文字数を超えてしまっている場合、別途同じファイル名で .txt ファイルに全体の書き起こし文が保存されているので、
+        # それを読み込んで使う
+        segment_audio_transcript_txt = segment_audio_path.with_suffix('.txt')
+        if segment_audio_transcript_txt.exists():
+            with open(segment_audio_transcript_txt, 'r') as f:
+                segment_audio_transcript = f.read()
+
+        # 書き起こし文をリストに追加
+        segment_audio_transcripts.append(segment_audio_transcript)
+
+    # 現在処理中の音声ファイルのインデックスと音声ファイルのパスと書き起こし文
+    current_index = 0
+
+    # セレクトボックスの選択肢
+    choices = ['このセグメントをデータセットから除外する'] + speaker_name
+
+    # 出力ファイルの連番
+    output_audio_count = 1
+
+    def OnClick(
+        segment_audio_path_str: str,
+        speaker_name: str,
+        transcript: str,
+    ) -> tuple[gr.Audio, gr.Textbox, gr.Dropdown]:
+        """ 確定ボタンが押されたときの処理 """
+
+        nonlocal current_index, segment_audio_paths, segment_audio_transcripts, choices, output_audio_count
+        segment_audio_path = Path(segment_audio_path_str)
+        typer.echo(f'Segment file: {segment_audio_path.name}')
+        typer.echo(f'Speaker name: {speaker_name}')
+        typer.echo(f'Transcript  : {transcript}')
+
+        # "このセグメントをデータセットから除外する" が選択された場合はスキップ
+        if speaker_name != 'このセグメントをデータセットから除外する':
+
+            # データセットに編集後の音声ファイルを保存 (書き起こし文はファイル名が長くなるので含まず、別途ファイルに保存する)
+            ## Gradio の謎機能で、GUI でトリムした編集後の一次ファイルが segment_audio_path_str として渡されてくる
+            audio_output_dir = constants.DATASETS_DIR / speaker_name / 'audios' / 'wavs'
+            audio_output_dir.mkdir(parents=True, exist_ok=True)
+            output_path = audio_output_dir / f'{output_audio_count:04}.wav'
+            output_audio_count += 1  # 連番をインクリメント
+            shutil.copyfile(segment_audio_path, output_path)
+            typer.echo(f'File {output_path} saved.')
+
+            # 音声ファイルのパスと書き起こし文のパスのペアを text.list に順次追記
+            text_list_path = constants.DATASETS_DIR / speaker_name / 'filelists' / 'text.list'
+            if not text_list_path.exists():
+                text_list_path.parent.mkdir(parents=True, exist_ok=True)
+                text_list_path.touch()
+            with open(text_list_path, 'a') as f:
+                f.write(f'Data/{speaker_name}/audios/wavs/{output_path.name}|{speaker_name}|JP|{transcript}\n')
+            typer.echo(f'File {text_list_path} updated.')
+            typer.echo('=' * utils.GetTerminalColumnSize())
+
+        else:
+            typer.echo('Segment file skipped.')
+            typer.echo('-' * utils.GetTerminalColumnSize())
+
+        # 次の処理対象のファイルのインデックス
+        current_index += 1
+
+        # 次の処理対象のファイルがない場合は終了
+        if current_index < 0 or current_index >= len(segment_audio_paths):
+            typer.echo('=' * utils.GetTerminalColumnSize())
+            typer.echo('All files processed.')
+            typer.echo('=' * utils.GetTerminalColumnSize())
+            sys.exit(0)
+
+        # UI を更新
+        return (
+            gr.Audio(value=segment_audio_paths[current_index], type='filepath', label=segment_audio_paths[current_index].name, autoplay=True),
+            gr.Dropdown(choices=choices, value=choices[0], label='音声セグメントの話者名'),  # type: ignore
+            gr.Textbox(value=segment_audio_transcripts[current_index], label='音声セグメントの書き起こし文'),
+        )
+
+    # Gradio UI の定義と起動
+    with gr.Blocks() as gui:
+        with gr.Column():
+            gr.Markdown("""
+                # Aivis - Create Datasets
+            """)
+            audio_player = gr.Audio(value=segment_audio_paths[current_index], type='filepath', label=segment_audio_paths[current_index].name, autoplay=True)
+            speaker_choice = gr.Dropdown(choices=choices, value=choices[0], label='音声セグメントの話者名')  # type: ignore
+            transcript_box = gr.Textbox(value=segment_audio_transcripts[current_index], label='音声セグメントの書き起こし文')
+            confirm_button = gr.Button('確定')
+
+        confirm_button.click(
+            fn = OnClick,
+            inputs = [
+                audio_player,
+                speaker_choice,
+                transcript_box,
+            ],
+            outputs = [
+                audio_player,
+                speaker_choice,
+                transcript_box,
+            ],
+        )
+
+        # 0.0.0.0:7860 で Gradio UI を起動
+        gui.launch(server_name='0.0.0.0', server_port=7860)
 
 
 @app.command()
