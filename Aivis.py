@@ -291,6 +291,7 @@ def create_datasets(
 
         nonlocal current_index, segment_audio_paths, segment_audio_transcripts, choices, output_audio_count
         segment_audio_path = Path(segment_audio_path_str)
+        typer.echo('-' * utils.GetTerminalColumnSize())
         typer.echo(f'Segment File : {segment_audio_path.name}')
         typer.echo(f'Speaker Name : {speaker_name}')
         typer.echo(f'Transcript   : {transcript}')
@@ -315,7 +316,7 @@ def create_datasets(
             with open(text_list_path, 'a') as f:
                 f.write(f'Data/{speaker_name}/audios/wavs/{output_path.name}|{speaker_name}|JP|{transcript}\n')
             typer.echo(f'File {text_list_path} updated.')
-            typer.echo('=' * utils.GetTerminalColumnSize())
+            typer.echo('-' * utils.GetTerminalColumnSize())
 
         else:
             typer.echo('Segment file skipped.')
@@ -344,6 +345,18 @@ def create_datasets(
             gradio.Dropdown(choices=choices, value=choices[0], label='音声セグメントの話者名'),  # type: ignore
             gradio.Textbox(value=segment_audio_transcripts[current_index], label='音声セグメントの書き起こし文'),
         )
+
+    # Gradio のバグで UI 上でトリミングした音声セグメントのサンプルレートが 8000Hz になってしまう問題のワークアラウンド
+    ## 本来は WaveSurfer.js の初期化時にサンプルレートを指定すべきところ指定されておらずデフォルト値でデコードされてしまい、
+    ## トリミングする際も 8000Hz のデータが使われてしまうことが原因なので、強引にフロントエンドのファイルを書き換える
+    ## sampleRate: 8000, -> sampleRate: 44100, (音声セグメントのサンプルレートは 44100Hz 固定なのでこれで動く)
+    ## ref: https://github.com/gradio-app/gradio/issues/6567#issuecomment-1853392537
+    index_js_path = Path(gradio.__file__).parent / 'templates/frontend/assets/index-84ec2915.js'
+    with open(index_js_path, 'r') as f:
+        index_js = f.read()
+    index_js = index_js.replace('sampleRate: 8000,', 'sampleRate: 44100,')
+    with open(index_js_path, 'w') as f:
+        f.write(index_js)
 
     # Gradio UI の定義と起動
     with gradio.Blocks() as gui:
