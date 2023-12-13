@@ -7,7 +7,7 @@ warnings.simplefilter(action='ignore', category=RuntimeWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 
 import faster_whisper
-import gradio as gr
+import gradio
 import json
 import shutil
 import stable_whisper
@@ -286,14 +286,14 @@ def create_datasets(
         segment_audio_path_str: str,
         speaker_name: str,
         transcript: str,
-    ) -> tuple[gr.Audio, gr.Textbox, gr.Dropdown]:
+    ) -> tuple[gradio.Audio, gradio.Textbox, gradio.Dropdown]:
         """ 確定ボタンが押されたときの処理 """
 
         nonlocal current_index, segment_audio_paths, segment_audio_transcripts, choices, output_audio_count
         segment_audio_path = Path(segment_audio_path_str)
-        typer.echo(f'Segment file: {segment_audio_path.name}')
-        typer.echo(f'Speaker name: {speaker_name}')
-        typer.echo(f'Transcript  : {transcript}')
+        typer.echo(f'Segment File : {segment_audio_path.name}')
+        typer.echo(f'Speaker Name : {speaker_name}')
+        typer.echo(f'Transcript   : {transcript}')
 
         # "このセグメントをデータセットから除外する" が選択された場合はスキップ
         if speaker_name != 'このセグメントをデータセットから除外する':
@@ -333,21 +333,35 @@ def create_datasets(
 
         # UI を更新
         return (
-            gr.Audio(value=segment_audio_paths[current_index], type='filepath', label=segment_audio_paths[current_index].name, autoplay=True),
-            gr.Dropdown(choices=choices, value=choices[0], label='音声セグメントの話者名'),  # type: ignore
-            gr.Textbox(value=segment_audio_transcripts[current_index], label='音声セグメントの書き起こし文'),
+            gradio.Audio(
+                value = segment_audio_paths[current_index],
+                sources = [],
+                type = 'filepath',
+                label = segment_audio_paths[current_index].name,
+                interactive = True,
+                autoplay = True,
+            ),
+            gradio.Dropdown(choices=choices, value=choices[0], label='音声セグメントの話者名'),  # type: ignore
+            gradio.Textbox(value=segment_audio_transcripts[current_index], label='音声セグメントの書き起こし文'),
         )
 
     # Gradio UI の定義と起動
-    with gr.Blocks() as gui:
-        with gr.Column():
-            gr.Markdown("""
+    with gradio.Blocks() as gui:
+        with gradio.Column():
+            gradio.Markdown("""
                 # Aivis - Create Datasets
             """)
-            audio_player = gr.Audio(value=segment_audio_paths[current_index], type='filepath', label=segment_audio_paths[current_index].name, autoplay=True)
-            speaker_choice = gr.Dropdown(choices=choices, value=choices[0], label='音声セグメントの話者名')  # type: ignore
-            transcript_box = gr.Textbox(value=segment_audio_transcripts[current_index], label='音声セグメントの書き起こし文')
-            confirm_button = gr.Button('確定')
+            audio_player = gradio.Audio(
+                value = segment_audio_paths[current_index],
+                sources = [],
+                type = 'filepath',
+                label = segment_audio_paths[current_index].name,
+                interactive = True,
+                autoplay = True,
+            )
+            speaker_choice = gradio.Dropdown(choices=choices, value=choices[0], label='音声セグメントの話者名')  # type: ignore
+            transcript_box = gradio.Textbox(value=segment_audio_transcripts[current_index], label='音声セグメントの書き起こし文')
+            confirm_button = gradio.Button('確定')
 
         confirm_button.click(
             fn = OnClick,
