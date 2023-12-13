@@ -307,8 +307,8 @@ def create_datasets(
             shutil.copyfile(segment_audio_path, output_path)
             typer.echo(f'File {output_path} saved.')
 
-            # 音声ファイルのパスと書き起こし文のパスのペアを text.list に順次追記
-            text_list_path = constants.DATASETS_DIR / speaker_name / 'filelists' / 'text.list'
+            # 音声ファイルのパスと書き起こし文のパスのペアを speaker.list に順次追記
+            text_list_path = constants.DATASETS_DIR / speaker_name / 'filelists' / 'speaker.list'
             if not text_list_path.exists():
                 text_list_path.parent.mkdir(parents=True, exist_ok=True)
                 text_list_path.touch()
