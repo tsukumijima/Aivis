@@ -267,7 +267,7 @@ def create_datasets(
         # それを読み込んで使う
         segment_audio_transcript_txt = segment_audio_path.with_suffix('.txt')
         if segment_audio_transcript_txt.exists():
-            with open(segment_audio_transcript_txt, 'r') as f:
+            with open(segment_audio_transcript_txt, 'r', encoding='utf-8') as f:
                 segment_audio_transcript = f.read()
 
         # 書き起こし文をリストに追加
@@ -313,7 +313,7 @@ def create_datasets(
             if not text_list_path.exists():
                 text_list_path.parent.mkdir(parents=True, exist_ok=True)
                 text_list_path.touch()
-            with open(text_list_path, 'a') as f:
+            with open(text_list_path, 'a', encoding='utf-8') as f:
                 f.write(f'Data/{speaker_name}/audios/wavs/{output_path.name}|{speaker_name}|JP|{transcript}\n')
             typer.echo(f'File {text_list_path} updated.')
             typer.echo('-' * utils.GetTerminalColumnSize())
@@ -352,10 +352,10 @@ def create_datasets(
     ## sampleRate: 8000, -> sampleRate: 44100, (音声セグメントのサンプルレートは 44100Hz 固定なのでこれで動く)
     ## ref: https://github.com/gradio-app/gradio/issues/6567#issuecomment-1853392537
     index_js_path = Path(gradio.__file__).parent / 'templates/frontend/assets/index-84ec2915.js'
-    with open(index_js_path, 'r') as f:
+    with open(index_js_path, 'r', encoding='utf-8') as f:
         index_js = f.read()
     index_js = index_js.replace('sampleRate: 8000,', 'sampleRate: 44100,')
-    with open(index_js_path, 'w') as f:
+    with open(index_js_path, 'w', encoding='utf-8') as f:
         f.write(index_js)
 
     # Gradio UI の定義と起動
