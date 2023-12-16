@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "Aivis"
 version = "1.0.0"
-description = "Aivis: AI Voice Imitate System"
+description = "Aivis: AI Voice Imitation System"
 authors = ["tsukumi <tsukumijima@users.noreply.github.com>"]
 # ref: https://github.com/python-poetry/poetry/issues/1537#issuecomment-1154642727
 classifiers = ["Private :: Do Not Upload"]

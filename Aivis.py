@@ -6,11 +6,9 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 
-import faster_whisper
-import gradio
 import json
+import re
 import shutil
-import stable_whisper
 import sys
 import typer
 from pathlib import Path
@@ -23,13 +21,16 @@ from Aivis import prepare
 from Aivis import utils
 
 
-app = typer.Typer()
+app = typer.Typer(help='Aivis: AI Voice Imitation System')
 
-@app.command()
+@app.command(help='Create audio segments from audio sources.')
 def create_segments(
     model_name: Annotated[constants.ModelNameType, typer.Option(help='Model name.')] = constants.ModelNameType.large_v3,
     force_transcribe: Annotated[bool, typer.Option(help='Force Whisper to transcribe audio files.')] = False,
 ):
+    # このサブコマンドでしか利用せず、かつ比較的インポートが重いモジュールはここでインポートする
+    import faster_whisper
+    import stable_whisper
 
     # 01-Sources フォルダ以下のメディアファイルを取得
     ## 拡張子は .wav / .mp3 / .m4a / .mp4 / .ts
@@ -220,11 +221,13 @@ def create_segments(
     typer.echo('=' * utils.GetTerminalColumnSize())
 
 
-@app.command()
+@app.command(help='Create datasets from audio segments.')
 def create_datasets(
     segments_dir_name: Annotated[str, typer.Argument(help='Segments directory name.')],
     speaker_names: Annotated[str, typer.Argument(help='Speaker name. (Comma separated)')],
 ):
+    # このサブコマンドでしか利用せず、かつ比較的インポートが重いモジュールはここでインポートする
+    import gradio
 
     typer.echo('=' * utils.GetTerminalColumnSize())
 
@@ -238,16 +241,15 @@ def create_datasets(
         typer.echo('=' * utils.GetTerminalColumnSize())
         return
 
-    # 出力後のデータセットの出力先ディレクトリを作成
+    # 出力後のデータセットの出力先ディレクトリがなければ作成
     speaker_name_list = speaker_names.split(',')
     for speaker in speaker_name_list:
         output_dir = constants.DATASETS_DIR / speaker
-        # すでにディレクトリが存在している場合は削除
-        if output_dir.exists():
-            shutil.rmtree(output_dir)
-        # ディレクトリを作成
-        output_dir.mkdir(parents=True)
-        typer.echo(f'Speaker: {speaker} / Folder: {output_dir} created.')
+        if not output_dir.exists():
+            output_dir.mkdir(parents=True, exist_ok=True)
+            typer.echo(f'Speaker: {speaker} / Folder: {output_dir} created.')
+        else:
+            typer.echo(f'Speaker: {speaker} / Folder: {output_dir} already created.')
     typer.echo('=' * utils.GetTerminalColumnSize())
 
     # 03-Segments/(指定されたディレクトリ名、通常は音声ファイル名と同じ) フォルダ以下のセグメント化された音声ファイルを取得
@@ -280,7 +282,12 @@ def create_datasets(
     choices = ['このセグメントをデータセットから除外する'] + speaker_name_list
 
     # 出力ファイルの連番
-    output_audio_count: dict[str, int] = { speaker: 1 for speaker in speaker_name_list }
+    output_audio_count: dict[str, int] = {}
+    for speaker in speaker_name_list:
+        # 既にそのディレクトリに存在するファイルの中で連番が一番大きいものを取得し、それに 1 を足したものを初期値とする
+        output_audio_count[speaker] = max([
+            int(re.sub(r'\D', '', i.stem)) for i in (constants.DATASETS_DIR / speaker / 'audios' / 'wavs').glob('*.wav')
+        ], default=0) + 1
 
     def OnClick(
         segment_audio_path_str: str,
@@ -394,7 +401,7 @@ def create_datasets(
         gui.launch(server_name='0.0.0.0', server_port=7860)
 
 
-@app.command()
+@app.command(help='Show version.')
 def version():
     typer.echo(f'Aivis version {__version__}')
 
