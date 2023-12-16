@@ -77,5 +77,5 @@ RUN cd /root/ && ln -s .cache/ .keras
 # ソースコードをコピー
 COPY ./ /code/
 
-# Aivis.py をエントリーポイントとして指定
-ENTRYPOINT ["poetry", "run", "python", "Aivis.py"]
+# poetry run task Aivis をエントリーポイントとして指定
+ENTRYPOINT ["poetry", "run", "task", "Aivis"]
