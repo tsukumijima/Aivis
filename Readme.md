@@ -1,4 +1,4 @@
 
 # Aivis
 
-💠 **Aivis:** **AI** **V**oice **I**mitate **S**ystem
+💠 **Aivis:** **AI** **V**oice **I**mitation **S**ystem
