@@ -295,7 +295,7 @@ def create_datasets(
     current_index = 0
 
     # セレクトボックスの選択肢
-    choices = ['このセグメントをデータセットから除外する'] + speaker_name_list
+    choices = ['🚫このセグメントをデータセットから除外する🚫'] + speaker_name_list
 
     # 出力ファイルの連番
     output_audio_count: dict[str, int] = {}
@@ -309,47 +309,57 @@ def create_datasets(
         segment_audio_path_str: str,
         speaker_name: str,
         transcript: str,
-    ) -> tuple[gradio.Audio, gradio.Textbox, gradio.Dropdown]:
+    ) -> tuple[gradio.Audio, gradio.Dropdown, gradio.Textbox]:
         """ 確定ボタンが押されたときの処理 """
 
         nonlocal current_index, segment_audio_paths, segment_audio_transcripts, choices, output_audio_count
-        segment_audio_path = Path(segment_audio_path_str)
-        typer.echo('-' * utils.GetTerminalColumnSize())
-        typer.echo(f'Segment File : {segment_audio_path.name}')
-        typer.echo(f'Speaker Name : {speaker_name}')
-        typer.echo(f'Transcript   : {transcript}')
 
-        # "このセグメントをデータセットから除外する" が選択された場合はスキップ
-        if speaker_name != 'このセグメントをデータセットから除外する':
+        # 話者名が空の場合は初期画面から「確定」を押して実行されたイベントなので、保存処理は実行しない
+        speaker_name = speaker_name.strip()
+        if speaker_name != '':
 
-            # データセットに編集後の音声ファイルを保存 (書き起こし文はファイル名が長くなるので含まず、別途ファイルに保存する)
-            ## Gradio の謎機能で、GUI でトリムした編集後の一次ファイルが segment_audio_path_str として渡されてくる
-            audio_output_dir = constants.DATASETS_DIR / speaker_name / 'audios' / 'wavs'
-            audio_output_dir.mkdir(parents=True, exist_ok=True)
-            output_path = audio_output_dir / f'{output_audio_count[speaker_name]:04}.wav'
-            output_audio_count[speaker_name] += 1  # 連番をインクリメント
-            shutil.copyfile(segment_audio_path, output_path)
-            typer.echo(f'File {output_path} saved.')
+            segment_audio_path = Path(segment_audio_path_str)
+            typer.echo(f'Segment File : {segment_audio_path.name}')
+            typer.echo(f'Speaker Name : {speaker_name}')
+            typer.echo(f'Transcript   : {transcript}')
 
-            # 音声ファイルのパスと書き起こし文のパスのペアを speaker.list に順次追記
-            text_list_path = constants.DATASETS_DIR / speaker_name / 'filelists' / 'speaker.list'
-            if not text_list_path.exists():
-                text_list_path.parent.mkdir(parents=True, exist_ok=True)
-                text_list_path.touch()
-            with open(text_list_path, 'a', encoding='utf-8') as f:
-                f.write(f'Data/{speaker_name}/audios/wavs/{output_path.name}|{speaker_name}|JP|{transcript}\n')
-            typer.echo(f'File {text_list_path} updated.')
-            typer.echo('-' * utils.GetTerminalColumnSize())
+            # "🚫このセグメントをデータセットから除外する🚫" が選択された場合はスキップ
+            if speaker_name != '🚫このセグメントをデータセットから除外する🚫':
+
+                # データセットに編集後の音声ファイルを保存 (書き起こし文はファイル名が長くなるので含まず、別途ファイルに保存する)
+                ## Gradio の謎機能で、GUI でトリムした編集後の一次ファイルが segment_audio_path_str として渡されてくる
+                audio_output_dir = constants.DATASETS_DIR / speaker_name / 'audios' / 'wavs'
+                audio_output_dir.mkdir(parents=True, exist_ok=True)
+                output_path = audio_output_dir / f'{output_audio_count[speaker_name]:04}.wav'
+                output_audio_count[speaker_name] += 1  # 連番をインクリメント
+                shutil.copyfile(segment_audio_path, output_path)
+                typer.echo(f'File {output_path} saved.')
+
+                # 音声ファイルのパスと書き起こし文のパスのペアを speaker.list に順次追記
+                text_list_path = constants.DATASETS_DIR / speaker_name / 'filelists' / 'speaker.list'
+                if not text_list_path.exists():  # ファイルがなければ空のファイルを作成
+                    text_list_path.parent.mkdir(parents=True, exist_ok=True)
+                    text_list_path.touch()
+                with open(text_list_path, 'a', encoding='utf-8') as f:
+                    f.write(f'Data/{speaker_name}/audios/wavs/{output_path.name}|{speaker_name}|JP|{transcript}\n')
+                typer.echo(f'File {text_list_path} updated.')
+                typer.echo('-' * utils.GetTerminalColumnSize())
+
+            else:
+                typer.echo('Segment file skipped.')
+                typer.echo('-' * utils.GetTerminalColumnSize())
+
+            # 次の処理対象のファイルのインデックス
+            current_index += 1
 
         else:
-            typer.echo('Segment file skipped.')
-            typer.echo('-' * utils.GetTerminalColumnSize())
-
-        # 次の処理対象のファイルのインデックス
-        current_index += 1
+            # 初期画面から「確定」を押して実行されたイベントなので、ログに確定を出力
+            typer.echo('=' * utils.GetTerminalColumnSize())
+            typer.echo('Selection of segment files has started.')
+            typer.echo('=' * utils.GetTerminalColumnSize())
 
         # 次の処理対象のファイルがない場合は終了
-        if current_index < 0 or current_index >= len(segment_audio_paths):
+        if current_index >= len(segment_audio_paths):
             typer.echo('=' * utils.GetTerminalColumnSize())
             typer.echo('All files processed.')
             typer.echo('=' * utils.GetTerminalColumnSize())
@@ -366,6 +376,36 @@ def create_datasets(
                 autoplay = True,
             ),
             gradio.Dropdown(choices=choices, value=choices[0], label='音声セグメントの話者名'),  # type: ignore
+            gradio.Textbox(value=segment_audio_transcripts[current_index], label='音声セグメントの書き起こし文'),
+        )
+
+    def OnReset(speaker_name: str) -> tuple[gradio.Audio, gradio.Textbox]:
+        """ リセットボタンが押されたときの処理 """
+
+        nonlocal current_index, segment_audio_paths, segment_audio_transcripts, choices
+
+        # 話者名が空の場合は初期画面から「確定」を押して実行されたイベントなので、デフォルトのフォームを返す
+        if speaker_name == '':
+            return (
+                gradio.Audio(
+                    sources = [],
+                    type = 'filepath',
+                    interactive = True,
+                    autoplay = True,
+                ),
+                gradio.Textbox(value='確定ボタンを押して、データセット作成を開始してください。', label='音声セグメントの書き起こし文'),
+            )
+
+        # 現在の current_index に応じて音声と書き起こし文をリセット
+        return (
+            gradio.Audio(
+                value = segment_audio_paths[current_index],
+                sources = [],
+                type = 'filepath',
+                label = segment_audio_paths[current_index].name,
+                interactive = True,
+                autoplay = True,
+            ),
             gradio.Textbox(value=segment_audio_transcripts[current_index], label='音声セグメントの書き起こし文'),
         )
 
@@ -388,30 +428,38 @@ def create_datasets(
                 # Aivis - Create Datasets
             """)
             audio_player = gradio.Audio(
-                value = segment_audio_paths[current_index],
                 sources = [],
                 type = 'filepath',
-                label = segment_audio_paths[current_index].name,
                 interactive = True,
                 autoplay = True,
             )
-            speaker_choice = gradio.Dropdown(choices=choices, value=choices[0], label='音声セグメントの話者名')  # type: ignore
-            transcript_box = gradio.Textbox(value=segment_audio_transcripts[current_index], label='音声セグメントの書き起こし文')
+            speaker_choice = gradio.Dropdown(choices=[], value='', label='音声セグメントの話者名')  # type: ignore
+            transcript_box = gradio.Textbox(value='確定ボタンを押して、データセット作成を開始してください。', label='音声セグメントの書き起こし文')
             confirm_button = gradio.Button('確定')
-
-        confirm_button.click(
-            fn = OnClick,
-            inputs = [
-                audio_player,
-                speaker_choice,
-                transcript_box,
-            ],
-            outputs = [
-                audio_player,
-                speaker_choice,
-                transcript_box,
-            ],
-        )
+            confirm_button.click(
+                fn = OnClick,
+                inputs = [
+                    audio_player,
+                    speaker_choice,
+                    transcript_box,
+                ],
+                outputs = [
+                    audio_player,
+                    speaker_choice,
+                    transcript_box,
+                ],
+            )
+            reset_button = gradio.Button('音声と書き起こし文の変更をリセット')
+            reset_button.click(
+                fn = OnReset,
+                inputs = [
+                    speaker_choice,
+                ],
+                outputs = [
+                    audio_player,
+                    transcript_box,
+                ],
+            )
 
         # 0.0.0.0:7860 で Gradio UI を起動
         gui.launch(server_name='0.0.0.0', server_port=7860)
