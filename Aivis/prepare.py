@@ -13,7 +13,6 @@ from pydub import AudioSegment
 def GetAudioFileDuration(file_path: Path) -> float:
     """
     音声ファイルの長さを取得する
-    現在未使用
 
     Args:
         file_path (Path): 音声ファイルのパス
@@ -173,6 +172,12 @@ def PrepareText(text: str) -> str:
     else:
         if text[-1] not in ['.', '!', '?']:
             text = text + '.'
+
+    # 先頭に 、。！？ がある場合は削除する
+    if is_japanese is True:
+        text = re.sub(r'^[、。！？]+', '', text)
+    else:
+        text = re.sub(r'^[,.!?]+', '', text)
 
     # 同じ文字が4文字以上続いていたら (例: ～～～～～～～～！！)、2文字にする (例: ～～！！)
     text = re.sub(r'(.)\1{3,}', r'\1\1', text)

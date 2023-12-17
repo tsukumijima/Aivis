@@ -136,11 +136,11 @@ def create_segments(
             typer.echo(f'File {voices_file} transcribed.')
 
             # 音声認識結果を再グループ化する
-            ## 再グループ化のアルゴリズムは多くあるが、ここでは恐らく一番良いと思われるデフォルト設定を使う
+            ## 再グループ化のアルゴリズムは多くあるが、ここではデフォルト設定を調整して使っている
             ## ref: https://github.com/jianfch/stable-ts#regrouping-words
             (transcribe_result.clamp_max()
                 .split_by_punctuation([('.', ' '), '。', '?', '？', (',', ' '), '，'])  # type: ignore
-                .split_by_gap(0.5)
+                .split_by_gap(0.75)
                 .merge_by_gap(0.3, max_words=3)
                 .split_by_punctuation([('.', ' '), '。', '?', '？']))  # type: ignore
 
@@ -173,10 +173,10 @@ def create_segments(
             segment_start = segment.start
             segment_end = segment.end
 
-            # もし現在処理中のセグメントの最初の単語の長さが 0.5 秒以上だった場合、先頭 0.25 秒を削る
+            # もし現在処理中のセグメントの最初の単語の長さが 0.425 秒以上だった場合、先頭 0.25 秒を削る
             ## 前のセグメントの最後の発音の母音が含まれてしまう問題の回避策
-            ## 日本語の場合単語は基本1文字か2文字になるため、発声時間は 0.5 秒以下になることが多いのを利用している
-            if segment.words[0].duration >= 0.5:
+            ## 日本語の場合単語は基本1文字か2文字になるため、発声時間は 0.425 秒以下になることが多いのを利用している
+            if segment.words[0].duration >= 0.425:
                 segment_start += 0.25
 
                 # さらに、もし現在処理中のセグメントの最初の単語の長さが 1 秒以上だった場合、
@@ -186,9 +186,9 @@ def create_segments(
                 if segment.words[0].duration >= 1.0:
                     segment_start += segment.words[0].duration - 1.0
 
-            # もし次のセグメントの最初の単語の長さが 0.5 秒以上だった場合、末尾 0.25 秒を伸ばす
+            # もし次のセグメントの最初の単語の長さが 0.425 秒以上だった場合、末尾 0.25 秒を伸ばす
             ## 最後の発音の母音が切れてしまう問題の回避策
-            if index + 1 < len(transcribe_result.segments) and transcribe_result.segments[index + 1].words[0].duration >= 0.5:
+            if index + 1 < len(transcribe_result.segments) and transcribe_result.segments[index + 1].words[0].duration >= 0.425:
                 segment_end += 0.25
 
                 # さらに、もし次のセグメントの最初の単語の長さが 1 秒以上だった場合、
@@ -196,10 +196,15 @@ def create_segments(
                 if transcribe_result.segments[index + 1].words[0].duration >= 1.0:
                     segment_end += min(transcribe_result.segments[index + 1].words[0].duration - 1.0, 1.0)
 
-            # そうでない場合も、もし次のセグメントの開始位置が現在処理中のセグメントの終了位置よりも後なら、
-            # 現在処理中のセグメントの終了位置を次のセグメントの開始位置に合わせる (最大で 0.75 秒まで伸ばす)
-            elif index + 1 < len(transcribe_result.segments) and segment_end < transcribe_result.segments[index + 1].start:
-                segment_end = min(transcribe_result.segments[index + 1].start, segment_end + 0.75)
+            # もし次のセグメントの開始位置が現在処理中のセグメントの終了位置よりも後なら、
+            # 現在処理中のセグメントの終了位置を次のセグメントの開始位置に合わせて末尾が欠けないようにする (最大で 3.0 秒まで伸ばす)
+            if index + 1 < len(transcribe_result.segments) and segment_end < transcribe_result.segments[index + 1].start:
+                segment_end = min(transcribe_result.segments[index + 1].start, segment_end + 3.0)
+
+            # もし現在処理中のセグメントが音声認識結果の最後のセグメントなら、
+            # 現在処理中のセグメントの終了位置を音声の長さに合わせて末尾が欠けないようにする
+            if index + 1 == len(transcribe_result.segments):
+                segment_end = prepare.GetAudioFileDuration(voices_file)
 
             typer.echo(f'Segment Range: {utils.SecondToTimeCode(segment_start)} - {utils.SecondToTimeCode(segment_end)}')
 
