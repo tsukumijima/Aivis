@@ -101,7 +101,6 @@ def create_segments(
             # ref: https://qiita.com/reriiasu/items/5ad8e1a7dbc425de7bb0
             # ref: https://zenn.dev/tsuzukia/articles/1381e6c9a88577
             # ref: https://note.com/asahi_ictrad/n/nf3ca329f17df
-            model.transcribe
             transcribe_result: stable_whisper.WhisperResult = cast(Any, model).transcribe_stable(
                 # 入力元の音声ファイル
                 str(voices_file),
@@ -110,8 +109,7 @@ def create_segments(
                 # ログをコンソールに出力する
                 verbose = True,
                 # 単語セグメントの再グループ化を行わない
-                ## 日本語の場合、再グループ化を行うと、話者を跨いで同じ一区切りにされてしまうことがあるなど
-                ## 今回の用途には適さないため、再グループ化を行わないようにしている
+                ## 別途音声認識が完了してから行う
                 regroup = False,
                 # すでに Demucs で音源分離を行っているため、ここでは音源分離を行わない
                 ## 音声ファイルごとにモデルを読み込むよりも、読み込んだモデルを使いまわした方が高速に処理できる
@@ -136,6 +134,15 @@ def create_segments(
             )
             typer.echo('-' * utils.GetTerminalColumnSize())
             typer.echo(f'File {voices_file} transcribed.')
+
+            # 音声認識結果を再グループ化する
+            ## 再グループ化のアルゴリズムは多くあるが、ここでは恐らく一番良いと思われるデフォルト設定を使う
+            ## ref: https://github.com/jianfch/stable-ts#regrouping-words
+            (transcribe_result.clamp_max()
+                .split_by_punctuation([('.', ' '), '。', '?', '？', (',', ' '), '，'])  # type: ignore
+                .split_by_gap(0.5)
+                .merge_by_gap(0.3, max_words=3)
+                .split_by_punctuation([('.', ' '), '。', '?', '？']))  # type: ignore
 
             # 音声認識結果をファイルに出力する
             with open(results_json_file, mode='w', encoding='utf-8') as f:
