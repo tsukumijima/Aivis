@@ -25,14 +25,14 @@ app = typer.Typer(help='Aivis: AI Voice Imitation System')
 
 @app.command(help='Create audio segments from audio sources.')
 def create_segments(
-    model_name: Annotated[constants.ModelNameType, typer.Option(help='Model name.')] = constants.ModelNameType.large_v3,
+    whisper_model: Annotated[constants.ModelNameType, typer.Option(help='Whisper model name.')] = constants.ModelNameType.large_v3,
     force_transcribe: Annotated[bool, typer.Option(help='Force Whisper to transcribe audio files.')] = False,
 ):
     # このサブコマンドでしか利用せず、かつ比較的インポートが重いモジュールはここでインポートする
     import faster_whisper
     import stable_whisper
 
-    # 01-Sources フォルダ以下のメディアファイルを取得
+    # 01-Sources ディレクトリ以下のメディアファイルを取得
     ## 拡張子は .wav / .mp3 / .m4a / .mp4 / .ts
     ## アルファベット順にソートする
     source_files = sorted(list(constants.SOURCES_DIR.glob('**/*.*')))
@@ -50,9 +50,9 @@ def create_segments(
     for voices_file in voices_files:
         typer.echo('=' * utils.GetTerminalColumnSize())
 
-        # 出力先フォルダを作成
-        ## すでに存在している場合は生成済みなのでスキップ (ただし、フォルダの中身が空の場合はスキップしない)
-        ## もしもう一度生成したい場合はフォルダを削除すること
+        # 出力先ディレクトリを作成
+        ## すでに存在している場合は生成済みなのでスキップ (ただし、ディレクトリの中身が空の場合はスキップしない)
+        ## もしもう一度生成したい場合はディレクトリを削除すること
         folder = constants.SEGMENTS_DIR / voices_file.name.split('.')[0]
         if folder.exists() and len(list(folder.glob('*.*'))) > 0:
             typer.echo(f'Folder {folder} already exists. Skip.')
@@ -78,9 +78,9 @@ def create_segments(
 
             # Whisper の学習済みモデルをロード (1回のみ)
             if model is None:
-                typer.echo(f'Whisper model loading... (Model: {model_name.value})')
+                typer.echo(f'Whisper model loading... (Model: {whisper_model.value})')
                 model = stable_whisper.load_faster_whisper(
-                    model_name.value,
+                    whisper_model.value,
                     device = 'cuda',
                     compute_type = 'auto',
                 )
@@ -235,7 +235,7 @@ def create_segments(
 
 @app.command(help='Create datasets from audio segments.')
 def create_datasets(
-    segments_dir_name: Annotated[str, typer.Argument(help='Segments directory name.')],
+    segments_dir_name: Annotated[str, typer.Argument(help='Segments directory name. Glob pattern (wildcard) is available.')],
     speaker_names: Annotated[str, typer.Argument(help='Speaker name. (Comma separated)')],
 ):
     # このサブコマンドでしか利用せず、かつ比較的インポートが重いモジュールはここでインポートする
@@ -244,10 +244,6 @@ def create_datasets(
     typer.echo('=' * utils.GetTerminalColumnSize())
 
     # バリデーション
-    if (constants.SEGMENTS_DIR / segments_dir_name).exists() is False:
-        typer.echo(f'Error: {segments_dir_name} is not directory.')
-        typer.echo('=' * utils.GetTerminalColumnSize())
-        return
     if speaker_names == '':
         typer.echo(f'Error: Speaker names is empty.')
         typer.echo('=' * utils.GetTerminalColumnSize())
@@ -264,10 +260,18 @@ def create_datasets(
             typer.echo(f'Speaker: {speaker} / Folder: {output_dir} already created.')
     typer.echo('=' * utils.GetTerminalColumnSize())
 
-    # 03-Segments/(指定されたディレクトリ名、通常は音声ファイル名と同じ) フォルダ以下のセグメント化された音声ファイルを取得
+    # 03-Segments/(指定されたディレクトリ名の Glob パターン)/ 以下のセグメント化された音声ファイルを取得
     ## 拡張子は .wav
     ## glob() の結果は順序がバラバラなのでアルファベット順にソートする
-    segment_audio_paths = sorted(list((constants.SEGMENTS_DIR / segments_dir_name).glob('**/*.wav')))
+    segment_audio_paths = sorted(list((constants.SEGMENTS_DIR).glob(f'{segments_dir_name}/*.wav')))
+    if len(segment_audio_paths) == 0:
+        typer.echo(f'Error: {segments_dir_name}/*.wav glob pattern matched no files.')
+        typer.echo('=' * utils.GetTerminalColumnSize())
+        return
+    for segment_audio_path in segment_audio_paths:
+        segments_dir_name = segment_audio_path.parent.name
+        typer.echo(f'Segment File: {segments_dir_name}/{segment_audio_path.name}')
+    typer.echo('=' * utils.GetTerminalColumnSize())
 
     # 音声ファイル名から書き起こし文を取得
     ## 例: 0001_こんにちは.wav -> こんにちは
