@@ -9,7 +9,6 @@ warnings.simplefilter(action='ignore', category=UserWarning)
 import json
 import re
 import shutil
-import sys
 import typer
 from pathlib import Path
 from typing import Annotated, Any, cast
@@ -316,7 +315,7 @@ def create_datasets(
 
         # 話者名が空の場合は初期画面から「確定」を押して実行されたイベントなので、保存処理は実行しない
         speaker_name = speaker_name.strip()
-        if speaker_name != '':
+        if speaker_name != '' and speaker_name != '選別完了':
 
             segment_audio_path = Path(segment_audio_path_str)
             typer.echo(f'Segment File : {segment_audio_path.name}')
@@ -352,8 +351,9 @@ def create_datasets(
             # 次の処理対象のファイルのインデックス
             current_index += 1
 
-        else:
+        elif current_index < len(segment_audio_paths):
             # 初期画面から「確定」を押して実行されたイベントなので、ログに確定を出力
+            ## 次の処理対象のファイルがない場合は実行されない
             typer.echo('=' * utils.GetTerminalColumnSize())
             typer.echo('Selection of segment files has started.')
             typer.echo('=' * utils.GetTerminalColumnSize())
@@ -363,7 +363,16 @@ def create_datasets(
             typer.echo('=' * utils.GetTerminalColumnSize())
             typer.echo('All files processed.')
             typer.echo('=' * utils.GetTerminalColumnSize())
-            sys.exit(0)
+            return (
+                gradio.Audio(
+                    sources = [],
+                    type = 'filepath',
+                    interactive = True,
+                    autoplay = True,
+                ),
+                gradio.Dropdown(choices=['選別完了'], value='選別完了', label='音声セグメントの話者名'),  # type: ignore
+                gradio.Textbox(value='すべてのセグメントの選別を完了しました。Aivis のプロセスを終了してください。', label='音声セグメントの書き起こし文'),
+            )
 
         # UI を更新
         return (
