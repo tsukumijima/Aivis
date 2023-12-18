@@ -22,6 +22,7 @@ fi
 ## データフォルダをコンテナ内にマウントする
 ## /root/.cache をマウントしているのは、毎回学習済みモデルをダウンロードするのを防ぐため
 docker run --gpus all -it --rm \
+    -p 7860:7860 \
     -v ${BASE_DIR}/.cache:/root/.cache \
     -v ${BASE_DIR}/01-Sources:/code/01-Sources \
     -v ${BASE_DIR}/02-PreparedSources:/code/02-PreparedSources \
