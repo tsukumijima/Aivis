@@ -419,7 +419,7 @@ def create_datasets(
         )
 
     # Gradio UI の定義と起動
-    with gradio.Blocks() as gui:
+    with gradio.Blocks(css='.gradio-container { max-width: 768px !important; }') as gui:
         with gradio.Column():
             gradio.Markdown("""
                 # Aivis - Create Datasets
