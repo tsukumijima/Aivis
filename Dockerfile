@@ -9,36 +9,16 @@ ENV TZ=Asia/Tokyo
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Python 3.11 と動作に必要な各種ソフトのインストール
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl git software-properties-common tzdata wget && \
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl git software-properties-common tzdata && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
-        curl \
         python3.11 \
         python3.11-dev \
         python3.11-distutils \
         python3.11-venv \
-        sox \
-        automake \
-        autoconf \
-        apt-utils \
-        bc \
         build-essential \
-        cmake \
-        flac \
-        gawk \
-        gfortran \
-        libboost-all-dev \
-        libtool \
-        libbz2-dev \
-        liblzma-dev \
-        libsndfile1-dev \
-        patch \
-        python2.7 \
-        subversion \
-        unzip \
-        zip \
-        zlib1g-dev && \
+        cmake && \
     apt-get -y autoremove && \
     apt-get -y clean && \
     rm -rf /var/lib/apt/lists/* && \
@@ -57,16 +37,16 @@ RUN curl -LO \
 WORKDIR /code/
 
 # pip をインストール
-## python3-pip だと Python 3.8 ベースの pip がインストールされるため、get-pip.py でインストールする
+## python3-pip だと古い Python 向けの pip がインストールされるため、get-pip.py でインストールする
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3.11
 
-# poetry をインストール
+# Poetry をインストール
 RUN pip install poetry
 
 # Poetry の依存パッケージリストだけをコピー
 COPY ./pyproject.toml ./poetry.lock ./poetry.toml /code/
 
-# 依存パッケージを poetry でインストール
+# 依存パッケージを Poetry でインストール
 RUN poetry env use 3.11 && \
     poetry install --only main --no-root
 
