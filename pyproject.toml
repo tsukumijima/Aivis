@@ -16,7 +16,7 @@ Aivis = "LD_LIBRARY_PATH=`python3 -c 'import os; import nvidia.cublas.lib; impor
 python = ">=3.11,<3.12"
 demucs = "^4.0.1"
 faster-whisper = "^0.10.0"
-gradio = "^4.8.0"
+gradio = {url = "https://github.com/tsukumijima/gradio/releases/download/v4.10.0b1/gradio-4.10.0-py3-none-any.whl"}
 nvidia-cublas-cu11 = "^11.11.3.6"
 pydub = "^0.25.1"
 pyloudnorm = "^0.1.1"

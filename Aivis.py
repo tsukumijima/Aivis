@@ -418,18 +418,6 @@ def create_datasets(
             gradio.Textbox(value=segment_audio_transcripts[current_index], label='音声セグメントの書き起こし文'),
         )
 
-    # Gradio のバグで UI 上でトリミングした音声セグメントのサンプルレートが 8000Hz になってしまう問題のワークアラウンド
-    ## 本来は WaveSurfer.js の初期化時にサンプルレートを指定すべきところ指定されておらずデフォルト値でデコードされてしまい、
-    ## トリミングする際も 8000Hz のデータが使われてしまうことが原因なので、強引にフロントエンドのファイルを書き換える
-    ## sampleRate: 8000, -> sampleRate: 44100, (音声セグメントのサンプルレートは 44100Hz 固定なのでこれで動く)
-    ## ref: https://github.com/gradio-app/gradio/issues/6567#issuecomment-1853392537
-    index_js_path = Path(gradio.__file__).parent / 'templates/frontend/assets/index-84ec2915.js'
-    with open(index_js_path, 'r', encoding='utf-8') as f:
-        index_js = f.read()
-    index_js = index_js.replace('sampleRate: 8000,', 'sampleRate: 44100,')
-    with open(index_js_path, 'w', encoding='utf-8') as f:
-        f.write(index_js)
-
     # Gradio UI の定義と起動
     with gradio.Blocks() as gui:
         with gradio.Column():
