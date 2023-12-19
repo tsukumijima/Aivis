@@ -487,8 +487,9 @@ def check_dataset(
 
     # 各音声ファイルごとにループ
     total_audio_duration = 0.0
-    for dataset_file in dataset_files:
-        typer.echo('-' * utils.GetTerminalColumnSize())
+    for index, dataset_file in enumerate(dataset_files):
+        if index > 0:
+            typer.echo('-' * utils.GetTerminalColumnSize())
         dataset_file_path = Path(dataset_file[0].replace('Data/', constants.DATASETS_DIR.as_posix() + '/'))
         typer.echo(f'Dataset File: {dataset_file_path}')
         if not dataset_file_path.exists():
@@ -499,7 +500,6 @@ def check_dataset(
             typer.echo(f'Duration: {utils.SecondToTimeCode(audio_duration)}')
             typer.echo(f'Transcript: {dataset_file[3]}')
 
-    typer.echo('-' * utils.GetTerminalColumnSize())
     typer.echo('=' * utils.GetTerminalColumnSize())
     typer.echo(f'Total Duration: {utils.SecondToTimeCode(total_audio_duration)}')
     typer.echo('=' * utils.GetTerminalColumnSize())
