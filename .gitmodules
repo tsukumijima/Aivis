@@ -1,0 +1,3 @@
+[submodule "Bert-VITS2"]
+	path = Bert-VITS2
+	url = https://github.com/tsukumijima/Bert-VITS2.git
