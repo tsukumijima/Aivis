@@ -559,7 +559,7 @@ def train(
     ## ex: 04-Datasets/(話者名)/audios/ -> Bert-VITS2/Data/(話者名)/audios/
     ## ex: 04-Datasets/(話者名)/filelists/ -> Bert-VITS2/Data/(話者名)/filelists/
     typer.echo('Copying dataset files...')
-    shutil.copytree(dataset_dir, bert_vits2_dataset_dir / speaker_name / 'audios')
+    shutil.copytree(dataset_dir / 'audios', bert_vits2_dataset_dir / speaker_name / 'audios')
     shutil.copytree(dataset_dir / 'filelists', bert_vits2_dataset_dir / speaker_name / 'filelists')
 
     # ダウンロードした事前学習済みモデルを Bert-VITS2/Data/(話者名)/models/ にコピー
