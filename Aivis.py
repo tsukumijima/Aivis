@@ -10,6 +10,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import typer
 from pathlib import Path
 from typing import Annotated, Any, cast
@@ -247,7 +248,7 @@ def create_datasets(
     if speaker_names == '':
         typer.echo(f'Error: Speaker names is empty.')
         typer.echo('=' * utils.GetTerminalColumnSize())
-        return
+        sys.exit(1)
 
     # 出力後のデータセットの出力先ディレクトリがなければ作成
     speaker_name_list = speaker_names.split(',')
@@ -267,7 +268,7 @@ def create_datasets(
     if len(segment_audio_paths) == 0:
         typer.echo(f'Error: {segments_dir_name}/*.wav glob pattern matched no files.')
         typer.echo('=' * utils.GetTerminalColumnSize())
-        return
+        sys.exit(1)
     for segment_audio_path in segment_audio_paths:
         segments_dir_name = segment_audio_path.parent.name
         typer.echo(f'Segment File: {segments_dir_name}/{segment_audio_path.name}')
@@ -474,7 +475,7 @@ def check_dataset(
     if not dataset_dir.exists():
         typer.echo(f'Error: Speaker {speaker_name} not found.')
         typer.echo('=' * utils.GetTerminalColumnSize())
-        return
+        sys.exit(1)
 
     # speaker.list をパースして音声ファイルのパスと書き起こし文を取得
     ## 例: Data/SpeakerName/audios/wavs/0001_こんにちは.wav|SpeakerName|JP|こんにちは
@@ -518,7 +519,7 @@ def train(
     if not dataset_dir.exists():
         typer.echo(f'Error: Speaker {speaker_name} not found.')
         typer.echo('=' * utils.GetTerminalColumnSize())
-        return
+        sys.exit(1)
 
     typer.echo(f'Speaker: {speaker_name} / Folder: {dataset_dir}')
     typer.echo(f'Epochs: {epochs} / Batch Size: {batch_size}')
@@ -628,11 +629,17 @@ def train(
     # 学習を開始 (Bert-VITS2/train_ms.py を実行)
     typer.echo('Training started.')
     typer.echo('-' * utils.GetTerminalColumnSize())
-    subprocess.run(
-        ['python', constants.BERT_VITS2_DIR / 'train_ms.py'],
-        cwd = constants.BERT_VITS2_DIR,  # カレントディレクトリを Bert-VITS2/ に変更しないと実行できない
-        check = True,
-    )
+    try:
+        subprocess.run(
+            ['python', constants.BERT_VITS2_DIR / 'train_ms.py'],
+            cwd = constants.BERT_VITS2_DIR,  # カレントディレクトリを Bert-VITS2/ に変更しないと実行できない
+            check = True,
+        )
+    except subprocess.CalledProcessError as ex:
+        typer.echo('-' * utils.GetTerminalColumnSize())
+        typer.echo(f'Training failed. (Process exited with code {ex.returncode})')
+        typer.echo('=' * utils.GetTerminalColumnSize())
+        sys.exit(1)
     typer.echo('-' * utils.GetTerminalColumnSize())
     typer.echo('Training finished.')
     typer.echo('=' * utils.GetTerminalColumnSize())
