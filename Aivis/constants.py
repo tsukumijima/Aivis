@@ -9,6 +9,7 @@ SOURCES_DIR = BASE_DIR / '01-Sources'
 PREPARE_SOURCES_DIR = BASE_DIR / '02-PreparedSources'
 SEGMENTS_DIR = BASE_DIR / '03-Segments'
 DATASETS_DIR = BASE_DIR / '04-Datasets'
+BERT_VITS2_DIR = BASE_DIR / 'Bert-VITS2'
 
 # データソースとして読み込むファイルの拡張子
 SOURCE_FILE_EXTENSIONS = [

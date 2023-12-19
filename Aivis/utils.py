@@ -1,5 +1,23 @@
 
 import os
+import requests
+from pathlib import Path
+
+
+def DownloadFile(url: str, path: Path) -> None:
+    """
+    ファイルをダウンロードする
+
+    Args:
+        url (str): ダウンロードするファイルの URL
+        path (str): ダウンロードしたファイルの保存先
+    """
+
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        with open(path, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
 
 
 def GetTerminalColumnSize() -> int:

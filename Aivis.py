@@ -9,6 +9,7 @@ warnings.simplefilter(action='ignore', category=UserWarning)
 import json
 import re
 import shutil
+import subprocess
 import typer
 from pathlib import Path
 from typing import Annotated, Any, cast
@@ -501,6 +502,139 @@ def check_dataset(
     typer.echo('-' * utils.GetTerminalColumnSize())
     typer.echo('=' * utils.GetTerminalColumnSize())
     typer.echo(f'Total Duration: {utils.SecondToTimeCode(total_audio_duration)}')
+    typer.echo('=' * utils.GetTerminalColumnSize())
+
+
+@app.command(help='Train model.')
+def train(
+    speaker_name: Annotated[str, typer.Argument(help='Speaker name.')],
+    epochs: Annotated[int, typer.Option(help='Training epochs.')] = 50,
+    batch_size: Annotated[int, typer.Option(help='Training batch size.')] = 4,
+):
+    typer.echo('=' * utils.GetTerminalColumnSize())
+
+    # バリデーション
+    dataset_dir = constants.DATASETS_DIR / speaker_name
+    if not dataset_dir.exists():
+        typer.echo(f'Error: Speaker {speaker_name} not found.')
+        typer.echo('=' * utils.GetTerminalColumnSize())
+        return
+
+    typer.echo(f'Speaker: {speaker_name} / Folder: {dataset_dir}')
+    typer.echo(f'Epochs: {epochs} / Batch Size: {batch_size}')
+    typer.echo('=' * utils.GetTerminalColumnSize())
+
+    # Bert-VITS2 のデータセットディレクトリを作成
+    bert_vits2_dataset_dir = constants.BERT_VITS2_DIR / 'Data'
+    bert_vits2_dataset_dir.mkdir(parents=True, exist_ok=True)
+
+    # 事前学習済みモデルがまだダウンロードされていなければダウンロード
+    ## ダウンロード中に実行を中断するとダウンロード途中のロードできない事前学習済みモデルが残ってしまう
+    ## 基本ダウンロード中に実行を中断すべきではないが、万が一そうなった場合は手動でダウンロード途中のモデルを削除してから再実行する必要がある
+    download_base_url = 'https://huggingface.co/OedoSoldier/Bert-VITS2-2.3/resolve/main/'
+    if not (bert_vits2_dataset_dir / 'DUR_0.pth').exists():
+        typer.echo('Downloading pretrained model (DUR_0.pth) ...')
+        utils.DownloadFile(download_base_url + 'DUR_0.pth', bert_vits2_dataset_dir / 'DUR_0.pth')
+    if not (bert_vits2_dataset_dir / 'D_0.pth').exists():
+        typer.echo('Downloading pretrained model (D_0.pth) ...')
+        utils.DownloadFile(download_base_url + 'D_0.pth', bert_vits2_dataset_dir / 'D_0.pth')
+    if not (bert_vits2_dataset_dir / 'G_0.pth').exists():
+        typer.echo('Downloading pretrained model (G_0.pth) ...')
+        utils.DownloadFile(download_base_url + 'G_0.pth', bert_vits2_dataset_dir / 'G_0.pth')
+    if not (bert_vits2_dataset_dir / 'WD_0.pth').exists():
+        typer.echo('Downloading pretrained model (WD_0.pth) ...')
+        utils.DownloadFile(download_base_url + 'WD_0.pth', bert_vits2_dataset_dir / 'WD_0.pth')
+
+    # 既に Bert-VITS2/Data/(話者名)/audios/ が存在する場合は一旦削除
+    ## 同一のデータセットでもう一度学習を回す際、Bert 関連の中間ファイルを削除して再生成されるようにする
+    if (bert_vits2_dataset_dir / speaker_name / 'audios').exists():
+        shutil.rmtree(bert_vits2_dataset_dir / speaker_name / 'audios')
+
+    # 既に Bert-VITS2/Data/(話者名)/filelists/ が存在する場合は一旦削除
+    ## 同一のデータセットでもう一度学習を回す際、書き起こしデータの中間ファイルを削除して再生成されるようにする
+    if (bert_vits2_dataset_dir / speaker_name / 'filelists').exists():
+        shutil.rmtree(bert_vits2_dataset_dir / speaker_name / 'filelists')
+
+    # 指定されたデータセットを Bert-VITS2 のデータセットディレクトリにコピー
+    ## ex: 04-Datasets/(話者名)/audios/ -> Bert-VITS2/Data/(話者名)/audios/
+    ## ex: 04-Datasets/(話者名)/filelists/ -> Bert-VITS2/Data/(話者名)/filelists/
+    typer.echo('Copying dataset files...')
+    shutil.copytree(dataset_dir, bert_vits2_dataset_dir / speaker_name / 'audios')
+    shutil.copytree(dataset_dir / 'filelists', bert_vits2_dataset_dir / speaker_name / 'filelists')
+
+    # ダウンロードした事前学習済みモデルを Bert-VITS2/Data/(話者名)/models/ にコピー
+    ## モデル学習の際にこれらのファイルは上書きされてしまうため、シンボリックリンクではなくコピーする
+    if not (bert_vits2_dataset_dir / speaker_name / 'models').exists():
+        typer.echo('Copying pretrained model files...')
+        (bert_vits2_dataset_dir / speaker_name / 'models').mkdir(parents=True, exist_ok=True)
+        ## ex: Bert-VITS2/Data/DUR_0.pth -> Bert-VITS2/Data/(話者名)/models/DUR_0.pth
+        if not (bert_vits2_dataset_dir / speaker_name / 'models' / 'DUR_0.pth').exists():
+            shutil.copyfile(bert_vits2_dataset_dir / 'DUR_0.pth', bert_vits2_dataset_dir / speaker_name / 'models' / 'DUR_0.pth')
+        if not (bert_vits2_dataset_dir / speaker_name / 'models' / 'D_0.pth').exists():
+            shutil.copyfile(bert_vits2_dataset_dir / 'D_0.pth', bert_vits2_dataset_dir / speaker_name / 'models' / 'D_0.pth')
+        if not (bert_vits2_dataset_dir / speaker_name / 'models' / 'G_0.pth').exists():
+            shutil.copyfile(bert_vits2_dataset_dir / 'G_0.pth', bert_vits2_dataset_dir / speaker_name / 'models' / 'G_0.pth')
+        if not (bert_vits2_dataset_dir / speaker_name / 'models' / 'WD_0.pth').exists():
+            shutil.copyfile(bert_vits2_dataset_dir / 'WD_0.pth', bert_vits2_dataset_dir / speaker_name / 'models' / 'WD_0.pth')
+
+    # Bert-VITS2/configs/config.json を Bert-VITS2/Data/(話者名)/config.json にコピー
+    ## モデル学習の際にこれらのファイルは上書きされてしまうため、シンボリックリンクではなくコピーする
+    if not (bert_vits2_dataset_dir / speaker_name / 'config.json').exists():
+        typer.echo('Copying model config file...')
+        shutil.copyfile(constants.BERT_VITS2_DIR / 'configs' / 'config.json', bert_vits2_dataset_dir / speaker_name / 'config.json')
+
+    # コピーした config.json の epochs と batch_size とを指定された値に変更
+    with open(bert_vits2_dataset_dir / speaker_name / 'config.json', 'r', encoding='utf-8') as f:
+        config = json.load(f)
+    config['train']['epochs'] = epochs
+    config['train']['batch_size'] = batch_size
+    with open(bert_vits2_dataset_dir / speaker_name / 'config.json', 'w', encoding='utf-8') as f:
+        json.dump(config, f, indent=2, ensure_ascii=False)
+
+    # Bert-VITS2/default_config.yml を Bert-VITS2/config.yml にコピー
+    ## 学習対象のデータセット名を変更する必要があるため、既に config.yml が存在する場合も上書きする
+    typer.echo('Copying default_config.yml to config.yml...')
+    shutil.copyfile(constants.BERT_VITS2_DIR / 'default_config.yml', constants.BERT_VITS2_DIR / 'config.yml')
+
+    # config.yml 内の dataset_path: "Data/MySpeaker" を dataset_path: "Data/(話者名)" に変更
+    ## 正規表現で置換する
+    with open(constants.BERT_VITS2_DIR / 'config.yml', 'r', encoding='utf-8') as f:
+        config_yml = f.read()
+    config_yml = re.sub(r'dataset_path: "Data/.*"', f'dataset_path: "Data/{speaker_name}"', config_yml)
+    with open(constants.BERT_VITS2_DIR / 'config.yml', 'w', encoding='utf-8') as f:
+        f.write(config_yml)
+    typer.echo('=' * utils.GetTerminalColumnSize())
+
+    # Bert-VITS2/preprocess_text.py を実行
+    typer.echo('Running preprocess_text.py...')
+    typer.echo('-' * utils.GetTerminalColumnSize())
+    subprocess.run(
+        ['python', constants.BERT_VITS2_DIR / 'preprocess_text.py'],
+        cwd = constants.BERT_VITS2_DIR,  # カレントディレクトリを Bert-VITS2/ に変更しないと実行できない
+        check = True,
+    )
+    typer.echo('=' * utils.GetTerminalColumnSize())
+
+    # Bert-VITS2/bert_gen.py を実行
+    typer.echo('Running bert_gen.py...')
+    typer.echo('-' * utils.GetTerminalColumnSize())
+    subprocess.run(
+        ['python', constants.BERT_VITS2_DIR / 'bert_gen.py'],
+        cwd = constants.BERT_VITS2_DIR,  # カレントディレクトリを Bert-VITS2/ に変更しないと実行できない
+        check = True,
+    )
+    typer.echo('=' * utils.GetTerminalColumnSize())
+
+    # 学習を開始 (Bert-VITS2/train_ms.py を実行)
+    typer.echo('Training started.')
+    typer.echo('-' * utils.GetTerminalColumnSize())
+    subprocess.run(
+        ['python', constants.BERT_VITS2_DIR / 'train_ms.py'],
+        cwd = constants.BERT_VITS2_DIR,  # カレントディレクトリを Bert-VITS2/ に変更しないと実行できない
+        check = True,
+    )
+    typer.echo('-' * utils.GetTerminalColumnSize())
+    typer.echo('Training finished.')
     typer.echo('=' * utils.GetTerminalColumnSize())
 
 

@@ -471,6 +471,21 @@ importlib-metadata = ">=5"
 importlib-resources = ">=5"
 
 [[package]]
+name = "cn2an"
+version = "0.5.22"
+description = "Convert Chinese numerals and Arabic numerals."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "cn2an-0.5.22-py3-none-any.whl", hash = "sha256:cba4c8f305b43da01f50696047cca3116c727424ac62338da6a3426e01454f3e"},
+    {file = "cn2an-0.5.22.tar.gz", hash = "sha256:27ae5b56441d7329ed2ececffa026bfa8fc353dcf1fb0d9146b303b9cce3ac37"},
+]
+
+[package.dependencies]
+proces = ">=0.1.3"
+setuptools = ">=47.3.1"
+
+[[package]]
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
@@ -2885,6 +2900,17 @@ sftp = ["paramiko (>=2.7.0)"]
 xxhash = ["xxhash (>=1.4.3)"]
 
 [[package]]
+name = "proces"
+version = "0.1.7"
+description = "text preprocess."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "proces-0.1.7-py3-none-any.whl", hash = "sha256:308325bbc96877263f06e57e5e9c760c4b42cc722887ad60be6b18fc37d68762"},
+    {file = "proces-0.1.7.tar.gz", hash = "sha256:70a05d9e973dd685f7a9092c58be695a8181a411d63796c213232fd3fdc43775"},
+]
+
+[[package]]
 name = "protobuf"
 version = "4.23.4"
 description = ""
@@ -5055,4 +5081,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.12"
-content-hash = "6d799bb9bd8c9d117848813d1f8fada7d352dce54b4f25f940273021591bed4d"
+content-hash = "f905f6d73cb7f3dbd9a917406f4a4a0b990275e5488e46b4ccdeafb796adef2e"

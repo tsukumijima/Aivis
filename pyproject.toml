@@ -32,6 +32,7 @@ typer = {extras = ["all"], version = "^0.9.0"}
 amfm-decompy = "^1.0.11"
 av = "==10.*"
 cmudict = "^1.0.16"
+cn2an = "^0.5.22"
 fugashi = "^1.3.0"
 g2p-en = "^2.1.0"
 gputil = "^1.4.0"
