@@ -492,17 +492,18 @@ def check_dataset(
         if index > 0:
             typer.echo('-' * utils.GetTerminalColumnSize())
         dataset_file_path = Path(dataset_file[0].replace('Data/', constants.DATASETS_DIR.as_posix() + '/'))
-        typer.echo(f'Dataset File: {dataset_file_path}')
+        typer.echo(f'Dataset File : {dataset_file_path}')
         if not dataset_file_path.exists():
             typer.echo(f'Error: Dataset file {dataset_file_path} not found.')
         else:
             audio_duration = prepare.GetAudioFileDuration(dataset_file_path)
             total_audio_duration += audio_duration
-            typer.echo(f'Duration: {utils.SecondToTimeCode(audio_duration)}')
-            typer.echo(f'Transcript: {dataset_file[3]}')
+            typer.echo(f'Duration     : {utils.SecondToTimeCode(audio_duration)}')
+            typer.echo(f'Transcript   : {dataset_file[3]}')
 
     typer.echo('=' * utils.GetTerminalColumnSize())
-    typer.echo(f'Total Duration: {utils.SecondToTimeCode(total_audio_duration)}')
+    typer.echo(f'Total Files    : {len(dataset_files)}')
+    typer.echo(f'Total Duration : {utils.SecondToTimeCode(total_audio_duration)}')
     typer.echo('=' * utils.GetTerminalColumnSize())
 
 
