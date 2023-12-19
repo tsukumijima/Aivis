@@ -462,6 +462,48 @@ def create_datasets(
         gui.launch(server_name='0.0.0.0', server_port=7860)
 
 
+@app.command(help='Check dataset files and calculate total duration.')
+def check_dataset(
+    speaker_name: Annotated[str, typer.Argument(help='Speaker name.')],
+):
+    typer.echo('=' * utils.GetTerminalColumnSize())
+
+    # バリデーション
+    dataset_dir = constants.DATASETS_DIR / speaker_name
+    if not dataset_dir.exists():
+        typer.echo(f'Error: Speaker {speaker_name} not found.')
+        typer.echo('=' * utils.GetTerminalColumnSize())
+        return
+
+    # speaker.list をパースして音声ファイルのパスと書き起こし文を取得
+    ## 例: Data/SpeakerName/audios/wavs/0001_こんにちは.wav|SpeakerName|JP|こんにちは
+    with open(dataset_dir / 'filelists' / 'speaker.list', 'r', encoding='utf-8') as f:
+        dataset_files_raw = f.read().splitlines()
+        dataset_files = [i.split('|') for i in dataset_files_raw]
+
+    typer.echo(f'Speaker: {speaker_name} / Folder: {dataset_dir}')
+    typer.echo('=' * utils.GetTerminalColumnSize())
+
+    # 各音声ファイルごとにループ
+    total_audio_duration = 0.0
+    for dataset_file in dataset_files:
+        typer.echo('-' * utils.GetTerminalColumnSize())
+        dataset_file_path = Path(dataset_file[0].replace('Data/', constants.DATASETS_DIR.as_posix() + '/'))
+        typer.echo(f'Dataset File: {dataset_file_path}')
+        if not dataset_file_path.exists():
+            typer.echo(f'Error: Dataset file {dataset_file_path} not found.')
+        else:
+            audio_duration = prepare.GetAudioFileDuration(dataset_file_path)
+            total_audio_duration += audio_duration
+            typer.echo(f'Duration: {utils.SecondToTimeCode(audio_duration)}')
+            typer.echo(f'Transcript: {dataset_file[3]}')
+
+    typer.echo('-' * utils.GetTerminalColumnSize())
+    typer.echo('=' * utils.GetTerminalColumnSize())
+    typer.echo(f'Total Duration: {utils.SecondToTimeCode(total_audio_duration)}')
+    typer.echo('=' * utils.GetTerminalColumnSize())
+
+
 @app.command(help='Show version.')
 def version():
     typer.echo(f'Aivis version {__version__}')
