@@ -8,7 +8,8 @@
 **Aivis は、高音質で感情豊かな音声を生成できる [Bert-VITS2](https://github.com/fishaudio/Bert-VITS2) 用のデータセットの作成・学習・推論を、オールインワンで行えるツールです。**
 
 通常、専用に作成された音声コーパス以外の音源から学習用データセットを作成するには、膨大な手間と時間がかかります。  
-Aivis では、**音声コーパスからデータセットを作成するための工程を AI で可能な限り自動化し、さらに最終的な人力でのアノテーション作業を簡単に行える Web UI を通して、データセット作成の手間と時間を大幅に削減します。**
+Aivis では、**音声コーパスからデータセットを作成するための工程を AI で可能な限り自動化し、さらに最終的な人力でのアノテーション作業を簡単に行える Web UI を通して、データセット作成の手間と時間を大幅に削減します。**  
+さらに Bert-VITS2 でのモデルの学習や推論 (Web UI の起動) も、簡単なコマンドひとつで実行できます。
 
 大元の音源の質や量にもよりますが、音声コーパスを使い学習させたモデルと比べても遜色ないクオリティの音声を生成できる印象です。  
 Bert-VITS2 の事前学習モデル自体の性能が高いようで、私の環境ではわずか3分弱のデータセットを学習したモデルでも (イントネーションはともかく) かなり近い声質 & 発音が明瞭な音声を生成できています。
@@ -128,6 +129,8 @@ Aivis のデータセットディレクトリは、4段階に分けて構成さ�
 
 ### 3. データセットの作成 (アノテーション)
 
+<img width="100%" alt="image" src="https://github.com/tsukumijima/Aivis/assets/39271166/a8e0412d-4bee-4496-a723-70114df9cb48"><br><br>
+
 ```bash
 # Non-Docker
 ./Aivis.sh create-datasets '*' 'MySpeaker1,MySpeaker2'
@@ -171,6 +174,10 @@ Web UI 上で確定ボタンを押すと、次のセグメントのアノテー�
 
 ### 4. 学習の実行
 
+<img width="100%" alt="image" src="https://github.com/tsukumijima/Aivis/assets/39271166/6d67a57b-d53e-465c-a454-d94d981278ad"><br><br>
+
+-----
+
 ```bash
 # Non-Docker
 ./Aivis.sh train 'MySpeaker1' --epochs 50 --batch-size 4
@@ -199,6 +206,8 @@ Geforce GTX1080 (バッチサイズ: 4) で 3000 エポック以上学習させ�
 もしモデルディレクトリに `G_7000.pth` が存在する場合は、7000 ステップで学習したモデルです。
 
 ### 5. 学習済みモデルの推論
+
+<img width="100%" alt="image" src="https://github.com/tsukumijima/Aivis/assets/39271166/b2ec1a91-defd-4ba5-aba7-2e41118bc73e"><br><br>
 
 ```bash
 # Non-Docker
