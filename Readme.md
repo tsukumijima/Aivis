@@ -67,7 +67,7 @@ cd Aivis
 
 ## Dataset Directory Structure
 
-Aivis のデータセットディレクトリは、4段階に分けて構成されています。
+Aivis のデータセットディレクトリは、5段階に分けて構成されています。
 
 - **01-Sources:** データセットにする音声をそのまま入れるディレクトリ
   - データセットの素材にする音声ファイルをそのまま入れてください。
@@ -98,8 +98,14 @@ Aivis のデータセットディレクトリは、4段階に分けて構成さ�
     - `create-datasets` サブコマンドによって、`03-Segments/` 以下のセグメント化された音声ファイルが変更されることはありません。
   - データセットは音声ファイルが `04-Datasets/(話者名)/audio/wavs/(連番).wav` に、書き起こし文が `04-Datasets/(話者名)/filelists/speaker.list` にそれぞれ保存されます。
     - このディレクトリ構造は Bert-VITS2 のデータセット構造に概ね準拠したものですが、config.json など一部のファイルやディレクトリは存在しません。
-    - `train` サブコマンドを実行すると、指定された話者のデータセットディレクトリが Bert-VITS2 側にコピーされ、別途 config.json など必要なファイルもコピーされた上で Bert-VITS2 の学習処理が開始されます。
     - Bert-VITS2 の学習処理によって、`04-Datasets/` 以下のデータセットが変更されることはありません。
+- **05-Models:** `train` サブコマンドで生成された、Bert-VITS2 の学習済みモデルが入るディレクトリ
+  - 実体は `Bert-VITS2/Data/` へのシンボリックリンクです。
+  - `train` サブコマンドを実行すると、`04-Datasets/` 以下の指定された話者のデータセットディレクトリが Bert-VITS2 側にコピーされ、Bert-VITS2 の学習処理が開始されます。
+    - 生成された学習済みモデルは、`05-Models/(話者名)/models/` 以下に保存されます。
+    - 再度学習を行う場合は、`05-Models/(話者名)/` ディレクトリを削除してから再度 `train` サブコマンドを実行してください。
+  - `infer` サブコマンドを実行すると、Bert-VITS2 の推論用 Web UI が起動されます。
+    - Bert-VITS2 の推論用 Web UI によって、`05-Models/` 以下の学習済みモデルが変更されることはありません。
 
 ## Usage
 
@@ -134,7 +140,7 @@ Aivis のデータセットディレクトリは、4段階に分けて構成さ�
 
 ### 3. データセットの作成 (アノテーション)
 
-<img width="100%" alt="image" src="https://github.com/tsukumijima/Aivis/assets/39271166/a8e0412d-4bee-4496-a723-70114df9cb48"><br><br>
+<img width="100%" alt="image" src="https://github.com/tsukumijima/Aivis/assets/39271166/a8e0412d-4bee-4496-a723-70114df9cb48"><br>
 
 ```bash
 # Non-Docker
@@ -179,9 +185,7 @@ Web UI 上で確定ボタンを押すと、次のセグメントのアノテー�
 
 ### 4. 学習の実行
 
-<img width="100%" alt="image" src="https://github.com/tsukumijima/Aivis/assets/39271166/6d67a57b-d53e-465c-a454-d94d981278ad"><br><br>
-
------
+<img width="100%" alt="image" src="https://github.com/tsukumijima/Aivis/assets/39271166/6d67a57b-d53e-465c-a454-d94d981278ad"><br>
 
 ```bash
 # Non-Docker
@@ -192,7 +196,7 @@ Web UI 上で確定ボタンを押すと、次のセグメントのアノテー�
 ```
 
 `train` サブコマンドを実行すると、指定された話者のデータセットディレクトリと config.json などの学習時に必要なファイルが生成・コピーされた上で、Bert-VITS2 の学習処理が開始されます。  
-事前学習済みモデルがまだダウンロードされていない場合は、実行時に `Bert-VITS2/Data/` 以下に自動的にダウンロードされます。  
+事前学習済みモデルがまだダウンロードされていない場合は、実行時に `05-Models/` 以下に自動的にダウンロードされます。  
 
 `--epochs` はオプションで、指定しなかった場合は 50 エポックで学習が終了します。  
 `--batch-size` はオプションで、指定しなかった場合は 4 になります。
@@ -210,13 +214,16 @@ Geforce GTX1080 (バッチサイズ: 4) で 3000 エポック以上学習させ�
 > Geforce GTX1080 ではバッチサイズ 3 〜 4 でギリギリな印象です。
 
 学習中は、標準出力に学習の進捗ログが表示されます。  
-学習したモデルは `Bert-VITS2/Data/(話者名)/models/` 以下に保存されます。  
-モデルは 1000 ステップごとに異なるファイル名で保存されます。  
-もしモデルディレクトリに `G_7000.pth` が存在する場合は、7000 ステップで学習したモデルです。
+学習したモデルは `05-Models/(話者名)/models/` 以下に保存されます。  
+`05-Models/(話者名)/` ディレクトリを別 PC の Aivis の `05-Models/` 以下にコピーすることで、学習済みモデルを別の環境に移行できます。
+
+> [!NOTE]  
+> モデルは 1000 ステップごとに異なるファイル名で保存されます。  
+> もしモデルディレクトリに `G_7000.pth` が存在する場合は、7000 ステップで学習したモデルです。
 
 ### 5. 学習済みモデルの推論
 
-<img width="100%" alt="image" src="https://github.com/tsukumijima/Aivis/assets/39271166/b2ec1a91-defd-4ba5-aba7-2e41118bc73e"><br><br>
+<img width="100%" alt="image" src="https://github.com/tsukumijima/Aivis/assets/39271166/b2ec1a91-defd-4ba5-aba7-2e41118bc73e"><br>
 
 ```bash
 # Non-Docker
