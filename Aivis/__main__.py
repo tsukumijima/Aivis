@@ -13,7 +13,7 @@ import subprocess
 import sys
 import typer
 from pathlib import Path
-from typing import Annotated, Any, cast
+from typing import Annotated, Any, cast, Optional
 
 from Aivis import __version__
 from Aivis import constants
@@ -56,10 +56,10 @@ def create_segments(
         ## もしもう一度生成したい場合はディレクトリを削除すること
         folder = constants.SEGMENTS_DIR / voices_file.name.split('.')[0]
         if folder.exists() and len(list(folder.glob('*.*'))) > 0:
-            typer.echo(f'Folder {folder} already exists. Skip.')
+            typer.echo(f'Directory {folder} already exists. Skip.')
             continue
         folder.mkdir(parents=True, exist_ok=True)
-        typer.echo(f'Folder {folder} created.')
+        typer.echo(f'Directory {folder} created.')
 
         transcribe_result: stable_whisper.WhisperResult
         results_json_file = constants.PREPARE_SOURCES_DIR / f'{voices_file.name.split(".")[0]}.json'
@@ -256,9 +256,9 @@ def create_datasets(
         output_dir = constants.DATASETS_DIR / speaker
         if not output_dir.exists():
             output_dir.mkdir(parents=True, exist_ok=True)
-            typer.echo(f'Speaker: {speaker} / Folder: {output_dir} created.')
+            typer.echo(f'Speaker: {speaker} / Directory: {output_dir} created.')
         else:
-            typer.echo(f'Speaker: {speaker} / Folder: {output_dir} already created.')
+            typer.echo(f'Speaker: {speaker} / Directory: {output_dir} already created.')
     typer.echo('=' * utils.GetTerminalColumnSize())
 
     # 03-Segments/(指定されたディレクトリ名の Glob パターン)/ 以下のセグメント化された音声ファイルを取得
@@ -483,7 +483,7 @@ def check_dataset(
         dataset_files_raw = f.read().splitlines()
         dataset_files = [i.split('|') for i in dataset_files_raw]
 
-    typer.echo(f'Speaker: {speaker_name} / Folder: {dataset_dir}')
+    typer.echo(f'Speaker: {speaker_name} / Directory: {dataset_dir}')
     typer.echo('=' * utils.GetTerminalColumnSize())
 
     # 各音声ファイルごとにループ
@@ -522,7 +522,7 @@ def train(
         typer.echo('=' * utils.GetTerminalColumnSize())
         sys.exit(1)
 
-    typer.echo(f'Speaker: {speaker_name} / Folder: {dataset_dir}')
+    typer.echo(f'Speaker: {speaker_name} / Directory: {dataset_dir}')
     typer.echo(f'Epochs: {epochs} / Batch Size: {batch_size}')
     typer.echo('=' * utils.GetTerminalColumnSize())
 
@@ -643,6 +643,70 @@ def train(
         sys.exit(1)
     typer.echo('-' * utils.GetTerminalColumnSize())
     typer.echo('Training finished.')
+    typer.echo('=' * utils.GetTerminalColumnSize())
+
+
+@app.command(help='Infer model.')
+def infer(
+    speaker_name: Annotated[str, typer.Argument(help='Speaker name.')],
+    model_step: Annotated[Optional[int], typer.Option(help='Model step. (Default: Largest step)')] = None,
+):
+    typer.echo('=' * utils.GetTerminalColumnSize())
+
+    # バリデーション
+    model_dir = constants.BERT_VITS2_DIR / 'Data' / speaker_name
+    if not model_dir.exists():
+        typer.echo(f'Error: Speaker {speaker_name} not found.')
+        typer.echo('=' * utils.GetTerminalColumnSize())
+        sys.exit(1)
+
+    # モデルファイルを探す
+    # 指定されていなければ最大のステップのモデルを探す
+    ## モデルは 1000 ステップごとに保存されており、G_(ステップ数).pth のファイル名フォーマットで保存されている
+    ## 例: G_0.pth / G_1000.pth / G_2000.pth / G_3000.pth
+    if model_step is None:
+        model_step = 0
+        for model_file in (model_dir / 'models').glob('G_*.pth'):
+            step = int(re.sub(r'\D', '', model_file.stem))
+            if step > model_step:
+                model_step = step
+        if (model_dir / 'models' / f'G_{model_step}.pth').exists():
+            model_file = model_dir / 'models' / f'G_{model_step}.pth'
+        else:
+            typer.echo(f'Error: Model file {model_dir / "models" / f"G_{model_step}.pth"} not found.')
+            typer.echo('=' * utils.GetTerminalColumnSize())
+            sys.exit(1)
+
+    # ステップ数が指定されている場合はそのステップのモデルを探す
+    else:
+        model_file = model_dir / 'models' / f'G_{model_step}.pth'
+        if not model_file.exists():
+            typer.echo(f'Error: Model file {model_file} not found.')
+            typer.echo('=' * utils.GetTerminalColumnSize())
+            sys.exit(1)
+
+    typer.echo(f'Speaker: {speaker_name} / Model Directory: {model_dir}')
+    typer.echo(f'Model File: {model_file}')
+    typer.echo('=' * utils.GetTerminalColumnSize())
+
+    # config.yml を正規表現で書き換える
+    ## dataset_path: ".*" を dataset_path: "Data/(話者名)" に書き換える
+    ## model: "models/.*" を model: "models/G_(ステップ数).pth" に書き換える
+    with open(constants.BERT_VITS2_DIR / 'config.yml', 'r', encoding='utf-8') as f:
+        config_yml = f.read()
+    config_yml = re.sub(r'dataset_path: ".*"', f'dataset_path: "Data/{speaker_name}"', config_yml)
+    config_yml = re.sub(r'model: "models/.*"', f'model: "models/G_{model_step}.pth"', config_yml)
+    with open(constants.BERT_VITS2_DIR / 'config.yml', 'w', encoding='utf-8') as f:
+        f.write(config_yml)
+
+    # Bert-VITS2/webui.py を実行
+    typer.echo('Running Infer Web UI...')
+    typer.echo('-' * utils.GetTerminalColumnSize())
+    subprocess.run(
+        ['python', constants.BERT_VITS2_DIR / 'webui.py'],
+        cwd = constants.BERT_VITS2_DIR,  # カレントディレクトリを Bert-VITS2/ に変更しないと実行できない
+        check = True,
+    )
     typer.echo('=' * utils.GetTerminalColumnSize())
 
 
