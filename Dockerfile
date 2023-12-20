@@ -50,9 +50,18 @@ COPY ./pyproject.toml ./poetry.lock ./poetry.toml /code/
 RUN poetry env use 3.11 && \
     poetry install --only main --no-root
 
+# 事前に OpenJTalk の辞書をダウンロードしておく
+## 通常は動的に行われるが、Docker イメージを再ビルドした際に毎回ダウンロードされるのを防ぐ
+RUN cd /code/.venv/lib/python3.11/site-packages/pyopenjtalk/ && \
+    curl -LO https://github.com/r9y9/open_jtalk/releases/download/v1.11.1/open_jtalk_dic_utf_8-1.11.tar.gz && \
+    tar -xvf open_jtalk_dic_utf_8-1.11.tar.gz && \
+    rm -rf open_jtalk_dic_utf_8-1.11.tar.gz
+
 # /root/.keras/ から /root/.cache/ にシンボリックリンクを貼る
-## ホスト側の .cache/ に inaSpeechSegmenter の学習済みモデルを保存できるようにする
 RUN cd /root/ && ln -s .cache/ .keras
+
+# /root/nltk_data/ から /root/.cache/ にシンボリックリンクを貼る
+RUN cd /root/ && ln -s .cache/ nltk_data
 
 # ソースコードをコピー
 COPY ./ /code/
