@@ -3,6 +3,8 @@
 
 💠 **Aivis:** **AI** **V**oice **I**mitation **S**ystem
 
+<img width="100%" alt="image" src="https://github.com/tsukumijima/Aivis/assets/39271166/c5b2a9cd-74ec-4b4b-8981-4ed81d0f4345">
+
 ## Overview
 
 **Aivis は、高音質で感情豊かな音声を生成できる [Bert-VITS2](https://github.com/fishaudio/Bert-VITS2) 用のデータセットの作成・学習・推論を、オールインワンで行えるツールです。**
