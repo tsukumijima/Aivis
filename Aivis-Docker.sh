@@ -28,4 +28,4 @@ docker run --gpus all -it --rm \
     -v ${BASE_DIR}/02-PreparedSources:/code/02-PreparedSources \
     -v ${BASE_DIR}/03-Segments:/code/03-Segments \
     -v ${BASE_DIR}/04-Datasets:/code/04-Datasets \
-    -v ${BASE_DIR}/Bert-VITS2:/code/Bert-VITS2 aivis $@
+    -v ${BASE_DIR}/Bert-VITS2:/code/Bert-VITS2 aivis "$@"
