@@ -26,12 +26,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 
 # FFmpeg 6.0 をインストール
 RUN curl -LO \
-    https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n6.0-latest-linux64-gpl-shared-6.0.tar.xz && \
-    tar -xvf ffmpeg-n6.0-latest-linux64-gpl-shared-6.0.tar.xz && \
-    cp -ar ffmpeg-n6.0-latest-linux64-gpl-shared-6.0/bin/* /usr/bin/ && \
-    cp -ar ffmpeg-n6.0-latest-linux64-gpl-shared-6.0/lib/* /usr/lib/ && \
-    rm -rf ffmpeg-n6.0-latest-linux64-gpl-shared-6.0 && \
-    rm -rf ffmpeg-n6.0-latest-linux64-gpl-shared-6.0.tar.xz
+    https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-11-30-12-55/ffmpeg-n6.0.1-linux64-gpl-shared-6.0.tar.xz && \
+    tar -xvf ffmpeg-n6.0.1-linux64-gpl-shared-6.0.tar.xz && \
+    cp -ar ffmpeg-n6.0.1-linux64-gpl-shared-6.0/bin/* /usr/bin/ && \
+    cp -ar ffmpeg-n6.0.1-linux64-gpl-shared-6.0/lib/* /usr/lib/ && \
+    rm -rf ffmpeg-n6.0.1-linux64-gpl-shared-6.0 && \
+    rm -rf ffmpeg-n6.0.1-linux64-gpl-shared-6.0.tar.xz
 
 # コンテナ内での作業ディレクトリを指定
 WORKDIR /code/
