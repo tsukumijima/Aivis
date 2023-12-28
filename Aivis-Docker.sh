@@ -9,10 +9,10 @@ if [ "$1" = "build" ]; then
     exit 0
 fi
 
-# TODO: デバッグ用 (そのうち消す)
+# TODO: Docker イメージが安定しないうちは毎回ビルドする
 docker build -t aivis .
 
-# まだ Docker イメージが作成されていない場合は作成する
+# まだ Docker イメージがビルドされていない場合はビルドする
 if [ ! "$(docker images -q aivis:latest 2> /dev/null)" ]; then
     docker build -t aivis .
 fi
