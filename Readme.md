@@ -25,10 +25,17 @@ Bert-VITS2 の事前学習モデル自体の性能が高いようで、私の環
 ## Installation
 
 Linux (Ubuntu 20.04 LTS) x64 でのみ検証しています。  
-Windows 上での動作は想定していません。Windows では WSL2 を使ってください (動作未検証) 。
+CUDA / cuDNN 関連ライブラリ (.so) は基本 `poetry install` 時に pip wheels としてインストールされるため、別途 CUDA / cuDNN をインストールする必要はないと思われます。
+
+移植は技術的には可能なものの諸々面倒なため、Windows 上での動作は想定していません。Windows では WSL2 を使ってください。
+
+> [!NOTE]  
+> 手元に環境がないため WSL2 での動作検証はできていませんが、動作報告はいただいています。  
+> WSL2 で動かす場合、NVIDIA GPU と CUDA のサポートが追加されている Windows 11 または Windows 10 (21H2 以降) が必要です。  
+> なお、NVIDIA GPU ドライバは Windows 側にのみインストールする必要があります。WSL2 側にはインストールしないでください。
 
 当然ですが、Aivis の実行には NVIDIA GPU が必要です。  
-Geforce GTX 1080 (VRAM 8GB) での動作を確認しています。VRAM は最低でも 8GB は必要なはずです (VRAM 12GB のグラボが欲しい…) 。
+Geforce GTX 1080 (VRAM 8GB) での動作を確認しています。VRAM はおそらく最低 8GB は必要です (VRAM 12GB のグラボが欲しい…) 。
 
 ### Non-Docker
 
