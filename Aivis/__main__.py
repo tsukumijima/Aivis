@@ -26,6 +26,7 @@ app = typer.Typer(help='Aivis: AI Voice Imitation System')
 
 @app.command(help='Create audio segments from audio sources.')
 def create_segments(
+    use_demucs: Annotated[bool, typer.Option(help='Use Demucs to extract voices from audio files.')] = True,
     whisper_model: Annotated[constants.ModelNameType, typer.Option(help='Whisper model name.')] = constants.ModelNameType.large_v3,
     force_transcribe: Annotated[bool, typer.Option(help='Force Whisper to transcribe audio files.')] = False,
     trim_silence: Annotated[bool, typer.Option(help='Trim silence (start and end only) from audio files.')] = True,
@@ -35,7 +36,7 @@ def create_segments(
     import stable_whisper
 
     # 01-Sources ディレクトリ以下のメディアファイルを取得
-    ## 拡張子は .wav / .mp3 / .m4a / .mp4 / .ts
+    ## 処理対象のメディアファイルの拡張子は constants.SOURCE_FILE_EXTENSIONS で定義されている
     ## アルファベット順にソートする
     source_files = sorted(list(constants.SOURCES_DIR.glob('**/*.*')))
     source_files = [i for i in source_files if i.suffix in constants.SOURCE_FILE_EXTENSIONS]
@@ -44,7 +45,11 @@ def create_segments(
     ## 本来は楽曲をボーカル・ドラム・ベース・その他に音源分離するための AI だが、これを応用して BGM・SE・ノイズなどを大部分除去できる
     ## Demucs でボーカル (=ボイス) のみを抽出したファイルは 02-PreparedSources/(音声ファイル名).wav に出力される
     ## すでに抽出済みのファイルがある場合は音源分離は行われず、すでに抽出済みのファイルを使用する
-    voices_files = demucs.ExtractVoices(source_files, constants.PREPARE_SOURCES_DIR)
+    ## Demucs での音源分離を行わない場合は、音声ファイルを wav に変換して 02-PreparedSources/(音声ファイル名).wav に出力する
+    if use_demucs is True:
+        voices_files = demucs.ExtractVoices(source_files, constants.PREPARE_SOURCES_DIR)
+    else:
+        voices_files = demucs.ConvertToWave(source_files, constants.PREPARE_SOURCES_DIR)
 
     model: faster_whisper.WhisperModel | None = None
 
