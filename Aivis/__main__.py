@@ -121,6 +121,10 @@ def create_segments(
                 # すでに Demucs で音源分離を行っているため、ここでは音源分離を行わない
                 ## 音声ファイルごとにモデルを読み込むよりも、読み込んだモデルを使いまわした方が高速に処理できる
                 demucs = False,
+                # 検出された無音に基づいてタイムスタンプの調整を有効にする
+                suppress_silence = True,
+                # 検出された無音に基づいて単語のタイムスタンプを調整する
+                suppress_word_ts = True,
                 # Silero VAD を使用してタイムスタンプ抑制マスクを生成する
                 vad = True,
                 # faster-whisper 本体の設定パラメータ
