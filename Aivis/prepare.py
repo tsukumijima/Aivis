@@ -66,7 +66,8 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: 
         shutil.copyfile(dst_file_path_temp1, dst_file_path_temp2)
     else:
         # 前後の無音区間を librosa を使って削除する
-        y, sr = librosa.load(dst_file_path_temp1)
+        ## sr=None を指定して、音声ファイルのサンプリングレートをそのまま維持して読み込む (指定しないと 22050Hz になる…)
+        y, sr = librosa.load(dst_file_path_temp1, sr=None)  # type: ignore
         y, _ = librosa.effects.trim(y, top_db=30)
         soundfile.write(dst_file_path_temp2, y, sr)
 
