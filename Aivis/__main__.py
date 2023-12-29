@@ -28,6 +28,7 @@ app = typer.Typer(help='Aivis: AI Voice Imitation System')
 def create_segments(
     whisper_model: Annotated[constants.ModelNameType, typer.Option(help='Whisper model name.')] = constants.ModelNameType.large_v3,
     force_transcribe: Annotated[bool, typer.Option(help='Force Whisper to transcribe audio files.')] = False,
+    trim_silence: Annotated[bool, typer.Option(help='Trim silence (start and end only) from audio files.')] = True,
 ):
     # このサブコマンドでしか利用せず、かつ比較的インポートが重いモジュールはここでインポートする
     import faster_whisper
@@ -224,7 +225,7 @@ def create_segments(
             output_audio_file = folder / f'{count:04d}_{transcript}.wav'
 
             # 一文ごとに切り出した (セグメント化した) 音声ファイルを出力
-            real_output_audio_file = prepare.SliceAudioFile(voices_file, output_audio_file, segment_start, segment_end)
+            real_output_audio_file = prepare.SliceAudioFile(voices_file, output_audio_file, segment_start, segment_end, trim_silence)
 
             typer.echo(f'File {real_output_audio_file} saved.')
             count += 1
