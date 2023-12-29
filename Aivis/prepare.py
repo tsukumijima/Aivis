@@ -1,4 +1,5 @@
 
+import errno
 import librosa
 import pyloudnorm
 import re
@@ -6,6 +7,7 @@ import regex
 import shutil
 import soundfile
 import subprocess
+import sys
 import tempfile
 import typer
 from pathlib import Path
@@ -92,12 +94,26 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: 
         shutil.copyfile(dst_file_path_temp4, dst_file_path)
     except OSError as ex:
         # 万が一ファイル名が最大文字数を超える場合は、ファイル名を短くする
-        # 87文字は、Linux のファイル名の最大バイト数 (255B) から、拡張子 (.wav) を引いた 251B に入る UTF-8 の最大文字数
-        if ex.errno == 36:
+        ## 87文字は、Linux のファイル名の最大バイト数 (255B) から、拡張子 (.wav) を引いた 251B に入る UTF-8 の最大文字数
+        ## NTFS のファイル名の最大文字数は 255 文字なので (バイト単位ではない) 、Windows でも問題ないはず
+        if ex.errno == errno.ENAMETOOLONG:
             # ファイル名を短くした上でコピーする
             dst_file_path_new = dst_file_path.with_name(dst_file_path.stem[:87] + dst_file_path.suffix)
             shutil.copyfile(dst_file_path_temp4, dst_file_path_new)
             typer.echo('Warning: File name is too long. Truncated.')
+            # フルの書き起こし文にアクセスできるように、別途テキストファイルに書き起こし文を保存する
+            with open(dst_file_path_new.with_suffix('.txt'), 'w', encoding='utf-8') as f:
+                transcript = re.sub(r'^\d+_', '', dst_file_path.stem)
+                f.write(transcript)
+            # ファイル名からの書き起こし文の取得が終わったので、dst_file_path を上書きする
+            dst_file_path = dst_file_path_new
+        # Windows でファイル名に使用できない文字が含まれている場合は、ファイル名から使用できない文字を置換する
+        ## Windows はファイル名に使用できない文字が多い
+        elif ex.errno == errno.EINVAL and sys.platform == 'win32':
+            # ファイル名に使用できない文字を置換する
+            dst_file_path_new = dst_file_path.with_name(re.sub(r'[\\/:*?"<>|]', '_', dst_file_path.stem) + dst_file_path.suffix)
+            shutil.copyfile(dst_file_path_temp4, dst_file_path_new)
+            typer.echo('Warning: File name contains invalid characters. Replaced.')
             # フルの書き起こし文にアクセスできるように、別途テキストファイルに書き起こし文を保存する
             with open(dst_file_path_new.with_suffix('.txt'), 'w', encoding='utf-8') as f:
                 transcript = re.sub(r'^\d+_', '', dst_file_path.stem)
