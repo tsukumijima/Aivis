@@ -12,12 +12,25 @@ DATASETS_DIR = BASE_DIR / '04-Datasets'
 BERT_VITS2_DIR = BASE_DIR / 'Bert-VITS2'
 
 # データソースとして読み込むファイルの拡張子
+## 大半の動画・音声ファイルを網羅しているはず
 SOURCE_FILE_EXTENSIONS = [
     '.wav',
+    '.flac',
+    '.opus',
+    '.ogg',
+    '.vorbis',
     '.mp3',
     '.m4a',
     '.mp4',
+    '.mov',
+    '.mkv',
+    '.webm',
+    '.wmv',
     '.ts',
+    '.mts',
+    '.m2ts',
+    '.mpg',
+    '.mpeg',
 ]
 
 # スキップする Whisper のハルシネーション避けのワード
