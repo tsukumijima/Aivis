@@ -47,7 +47,7 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: 
 
     # 一時保存先のテンポラリファイル
     ## Windows だと /tmp/ が使えないので NamedTemporaryFile を使う
-    ## src_file_path --切り出し--> temp1 --無音区間削除--> temp2 --モノラル化--> temp3 --ノーマライズ--> temp4 --リネーム--> dst_file_path
+    ## src_file_path --切り出し--> temp1 --モノラル化--> temp2 --ノーマライズ--> temp3 --無音区間削除--> temp4 --リネーム--> dst_file_path
     dst_file_path_temp1 = Path(tempfile.NamedTemporaryFile(suffix='.wav').name)
     dst_file_path_temp2 = Path(tempfile.NamedTemporaryFile(suffix='.wav').name)
     dst_file_path_temp3 = Path(tempfile.NamedTemporaryFile(suffix='.wav').name)
@@ -63,31 +63,32 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: 
     sliced_audio = audio[start * 1000:end * 1000]
     sliced_audio.export(dst_file_path_temp1, format='wav')
 
-    if trim_silence is False:
-        # 無音区間を削除せずにそのままコピーする
-        shutil.copyfile(dst_file_path_temp1, dst_file_path_temp2)
-    else:
-        # 前後の無音区間を librosa を使って削除する
-        ## sr=None を指定して、音声ファイルのサンプリングレートをそのまま維持して読み込む (指定しないと 22050Hz になる…)
-        y, sr = librosa.load(dst_file_path_temp1, sr=None)  # type: ignore
-        y, _ = librosa.effects.trim(y, top_db=30)
-        soundfile.write(dst_file_path_temp2, y, sr)
-
     # FFmpeg で 44.1kHz 16bit モノラルの wav 形式に変換する
     ## 基本この時点で 44.1kHz 16bit にはなっているはずだが、音声チャンネルはステレオのままなので、ここでモノラルにダウンミックスする
     subprocess.run([
         'ffmpeg',
         '-y',
-        '-i', str(dst_file_path_temp2),
+        '-i', str(dst_file_path_temp1),
         '-ac', '1',
         '-ar', '44100',
         '-acodec', 'pcm_s16le',
-        str(dst_file_path_temp3),
+        str(dst_file_path_temp2),
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     # pyloudnorm で音声ファイルをノーマライズ（ラウドネス正規化）する
-    ## FFmpeg でのモノラルへのダウンミックスで音量が変わる可能性も無くはないため、念のため最後にノーマライズを行うように実装している
-    LoudnessNorm(dst_file_path_temp3, dst_file_path_temp4, loudness=-23.0)  # -23LUFS にノーマライズする
+    ## FFmpeg でのモノラルへのダウンミックスで音量が変わる可能性も無くはないため、念のためダウンミックス後にノーマライズを行うように実装している
+    LoudnessNorm(dst_file_path_temp2, dst_file_path_temp3, loudness=-23.0)  # -23LUFS にノーマライズする
+
+    if trim_silence is True:
+        # 最後に前後の無音区間を librosa を使って削除する
+        ## sr=None を指定して、音声ファイルのサンプリングレートをそのまま維持して読み込む (指定しないと 22050Hz になる…)
+        ## 無音区間は dB 基準なのでノーマライズ後に実行した方が望ましい
+        y, sr = librosa.load(dst_file_path_temp3, sr=None)  # type: ignore
+        y, _ = librosa.effects.trim(y, top_db=30)
+        soundfile.write(dst_file_path_temp4, y, sr)
+    else:
+        # 無音区間は削除せずにそのままコピーする
+        shutil.copyfile(dst_file_path_temp3, dst_file_path_temp4)
 
     # 最後にファイルを dst_file_path にコピーする
     try:
