@@ -382,7 +382,7 @@ def create_datasets(
 
             segment_audio_path = Path(segment_audio_path_str)
             typer.echo(f'Segment File : {segment_audio_path.name}')
-            typer.echo(f'Speaker Name : {speaker_name}')
+            typer.echo(f'Speaker Name : {speaker_name if is_skip is False else "(Skipped)"}')
             typer.echo(f'Transcript   : {transcript}')
 
             # 確定ボタンの代わりにスキップボタンが押された場合は何もしない
