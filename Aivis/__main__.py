@@ -643,6 +643,16 @@ def train(
     )
     typer.echo('=' * utils.GetTerminalColumnSize())
 
+    # Bert-VITS2/clap_gen.py を実行
+    typer.echo('Running clap_gen.py...')
+    typer.echo('-' * utils.GetTerminalColumnSize())
+    subprocess.run(
+        ['python', constants.BERT_VITS2_DIR / 'clap_gen.py'],
+        cwd = constants.BERT_VITS2_DIR,  # カレントディレクトリを Bert-VITS2/ に変更しないと実行できない
+        check = True,
+    )
+    typer.echo('=' * utils.GetTerminalColumnSize())
+
     # 学習を開始 (Bert-VITS2/train_ms.py を実行)
     typer.echo('Training started.')
     typer.echo('-' * utils.GetTerminalColumnSize())
