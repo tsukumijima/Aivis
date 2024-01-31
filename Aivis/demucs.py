@@ -86,10 +86,9 @@ def __ExtractVoicesMultiProcess(file_paths: list[Path], output_dir: Path) -> lis
 
     import torch
     from demucs.pretrained import get_model_from_args
-    from demucs.repo import AnyModel
     from stable_whisper.audio import demucs_audio
 
-    demucs_model: AnyModel | None = None
+    demucs_model = None
 
     # 出力されたファイルパスのリスト (すでに抽出済みのファイルも含む)
     output_file_paths: list[Path] = []
@@ -112,7 +111,7 @@ def __ExtractVoicesMultiProcess(file_paths: list[Path], output_dir: Path) -> lis
         # 学習済みモデルを読み込む (初回のみ)
         if demucs_model is None:
             typer.echo('Demucs model loading...')
-            demucs_model = get_model_from_args(type('args', (object,), dict(name='htdemucs_ft', repo=None))).cpu().eval()
+            demucs_model = get_model_from_args(type('args', (object,), dict(name='htdemucs_ft', repo=None))).cpu().eval().models[0]
             typer.echo('Demucs model loaded.')
             typer.echo('-' * utils.GetTerminalColumnSize())
 
