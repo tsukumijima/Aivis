@@ -549,7 +549,7 @@ def train(
     # 事前学習済みモデルがまだダウンロードされていなければダウンロード
     ## ダウンロード中に実行を中断するとダウンロード途中のロードできない事前学習済みモデルが残ってしまう
     ## 基本ダウンロード中に実行を中断すべきではないが、万が一そうなった場合は手動でダウンロード途中のモデルを削除してから再実行する必要がある
-    download_base_url = 'https://huggingface.co/OedoSoldier/Bert-VITS2-2.3/resolve/main/'
+    download_base_url = 'https://huggingface.co/Stardust-minus/Bert-VITS2-Japanese-Extra/resolve/main/'
     if not (bert_vits2_dataset_dir / 'DUR_0.pth').exists():
         typer.echo('Downloading pretrained model (DUR_0.pth) ...')
         utils.DownloadFile(download_base_url + 'DUR_0.pth', bert_vits2_dataset_dir / 'DUR_0.pth')
