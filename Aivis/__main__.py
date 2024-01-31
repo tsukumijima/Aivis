@@ -488,6 +488,7 @@ def create_datasets(
         with gradio.Column():
             gradio.Markdown("""
                 # Aivis - Create Datasets
+                Tab キー / Shift + Tab キー を押すと、フォームやボタン間で素早くフォーカスを移動できます。
             """)
             audio_player = gradio.Audio(
                 sources = [],
