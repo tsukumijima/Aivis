@@ -251,6 +251,7 @@ def create_datasets(
 ):
     # このサブコマンドでしか利用せず、かつ比較的インポートが重いモジュールはここでインポートする
     import gradio
+    from gradio import WaveformOptions
 
     typer.echo('=' * utils.GetTerminalColumnSize())
 
@@ -381,6 +382,7 @@ def create_datasets(
                     type = 'filepath',
                     interactive = True,
                     autoplay = True,
+                    waveform_options = WaveformOptions(sample_rate=44100),  # UI 上でトリミングした音声ファイルのサンプリングレート
                 ),
                 gradio.Dropdown(choices=['選別完了'], value='選別完了', label='音声セグメントの話者名'),  # type: ignore
                 gradio.Textbox(value='すべてのセグメントの選別を完了しました。Aivis のプロセスを終了してください。', label='音声セグメントの書き起こし文'),
@@ -395,6 +397,7 @@ def create_datasets(
                 label = segment_audio_paths[current_index].name,
                 interactive = True,
                 autoplay = True,
+                waveform_options = WaveformOptions(sample_rate=44100),  # UI 上でトリミングした音声ファイルのサンプリングレート
             ),
             gradio.Dropdown(choices=choices, value=choices[0], label='音声セグメントの話者名'),  # type: ignore
             gradio.Textbox(value=segment_audio_transcripts[current_index], label='音声セグメントの書き起こし文'),
@@ -413,6 +416,7 @@ def create_datasets(
                     type = 'filepath',
                     interactive = True,
                     autoplay = True,
+                    waveform_options = WaveformOptions(sample_rate=44100),  # UI 上でトリミングした音声ファイルのサンプリングレート
                 ),
                 gradio.Textbox(value='確定ボタンを押して、データセット作成を開始してください。', label='音声セグメントの書き起こし文'),
             )
@@ -426,6 +430,7 @@ def create_datasets(
                 label = segment_audio_paths[current_index].name,
                 interactive = True,
                 autoplay = True,
+                waveform_options = WaveformOptions(sample_rate=44100),  # UI 上でトリミングした音声ファイルのサンプリングレート
             ),
             gradio.Textbox(value=segment_audio_transcripts[current_index], label='音声セグメントの書き起こし文'),
         )
@@ -441,6 +446,7 @@ def create_datasets(
                 type = 'filepath',
                 interactive = True,
                 autoplay = True,
+                waveform_options = WaveformOptions(sample_rate=44100),  # UI 上でトリミングした音声ファイルのサンプリングレート
             )
             speaker_choice = gradio.Dropdown(choices=[], value='', label='音声セグメントの話者名')  # type: ignore
             transcript_box = gradio.Textbox(value='確定ボタンを押して、データセット作成を開始してください。', label='音声セグメントの書き起こし文')
