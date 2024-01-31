@@ -6,6 +6,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 
+import functools
 import json
 import re
 import shutil
@@ -248,6 +249,7 @@ def create_segments(
 def create_datasets(
     segments_dir_name: Annotated[str, typer.Argument(help='Segments directory name. Glob pattern (wildcard) is available.')],
     speaker_names: Annotated[str, typer.Argument(help='Speaker name. (Comma separated)')],
+    accept_all: Annotated[bool, typer.Option(help='Accept all segments and transcriptions. (Skip UI)')] = False,
 ):
     # このサブコマンドでしか利用せず、かつ比較的インポートが重いモジュールはここでインポートする
     import gradio
@@ -307,7 +309,7 @@ def create_datasets(
     current_index = 0
 
     # セレクトボックスの選択肢
-    choices = ['🚫このセグメントをデータセットから除外する🚫'] + speaker_name_list
+    choices = speaker_name_list
 
     # 出力ファイルの連番
     output_audio_count: dict[str, int] = {}
@@ -317,10 +319,58 @@ def create_datasets(
             int(re.sub(r'\D', '', i.stem)) for i in (constants.DATASETS_DIR / speaker / 'audios' / 'wavs').glob('*.wav')
         ], default=0) + 1
 
+    # --accept-all を指定して UI を表示せずにすべての音声ファイルを一括処理する場合
+    if accept_all is True:
+
+        # --accept-all を指定した場合、話者名は必ず1つだけでなければならない
+        ## 当然ながら、--accept-all を使う際は処理対象に指定したすべてのセグメントが同一話者のものでなければならない
+        if len(speaker_name_list) != 1:
+            typer.echo(f'Error: Speaker names must be one if --accept-all option is specified.')
+            typer.echo('=' * utils.GetTerminalColumnSize())
+            sys.exit(1)
+        speaker_name = speaker_name_list[0]
+
+        # 現在処理中の音声ファイルのインデックスが音声ファイルの総数に達するまでループ
+        while current_index < len(segment_audio_paths):
+
+            segment_audio_path = segment_audio_paths[current_index]
+            transcript = segment_audio_transcripts[current_index]
+            typer.echo(f'Segment File : {segment_audio_path.name}')
+            typer.echo(f'Speaker Name : {speaker_name}')
+            typer.echo(f'Transcript   : {transcript}')
+
+            # データセットに音声ファイルを保存 (書き起こし文はファイル名が長くなるので含まず、別途書き起こしファイルに保存する)
+            audio_output_dir = constants.DATASETS_DIR / speaker_name / 'audios' / 'wavs'
+            audio_output_dir.mkdir(parents=True, exist_ok=True)
+            output_path = audio_output_dir / f'{output_audio_count[speaker_name]:04}.wav'
+            output_audio_count[speaker_name] += 1  # 連番をインクリメント
+            shutil.copyfile(segment_audio_path, output_path)
+            typer.echo(f'File {output_path} saved.')
+
+            # 音声ファイルのパスと書き起こし文のパスのペアを speaker.list に順次追記
+            text_list_path = constants.DATASETS_DIR / speaker_name / 'filelists' / 'speaker.list'
+            if not text_list_path.exists():  # ファイルがなければ空のファイルを作成
+                text_list_path.parent.mkdir(parents=True, exist_ok=True)
+                text_list_path.touch()
+            with open(text_list_path, 'a', encoding='utf-8') as f:
+                f.write(f'Data/{speaker_name}/audios/wavs/{output_path.name}|{speaker_name}|JP|{transcript}\n')
+            typer.echo(f'File {text_list_path} updated.')
+            typer.echo('-' * utils.GetTerminalColumnSize())
+
+            # 次の処理対象のファイルのインデックスに進める
+            current_index += 1
+
+        # すべての音声ファイルを処理したら終了
+        typer.echo('=' * utils.GetTerminalColumnSize())
+        typer.echo('All files processed.')
+        typer.echo('=' * utils.GetTerminalColumnSize())
+        return
+
     def OnClick(
         segment_audio_path_str: str,
         speaker_name: str,
         transcript: str,
+        is_skip: bool = False,
     ) -> tuple[gradio.Audio, gradio.Dropdown, gradio.Textbox]:
         """ 確定ボタンが押されたときの処理 """
 
@@ -335,10 +385,12 @@ def create_datasets(
             typer.echo(f'Speaker Name : {speaker_name}')
             typer.echo(f'Transcript   : {transcript}')
 
-            # "🚫このセグメントをデータセットから除外する🚫" が選択された場合はスキップ
-            if speaker_name != '🚫このセグメントをデータセットから除外する🚫':
-
-                # データセットに編集後の音声ファイルを保存 (書き起こし文はファイル名が長くなるので含まず、別途ファイルに保存する)
+            # 確定ボタンの代わりにスキップボタンが押された場合は何もしない
+            if is_skip is True:
+                typer.echo('Segment file skipped.')
+                typer.echo('-' * utils.GetTerminalColumnSize())
+            else:
+                # データセットに編集後の音声ファイルを保存 (書き起こし文はファイル名が長くなるので含まず、別途書き起こしファイルに保存する)
                 ## Gradio の謎機能で、GUI でトリムした編集後の一次ファイルが segment_audio_path_str として渡されてくる
                 audio_output_dir = constants.DATASETS_DIR / speaker_name / 'audios' / 'wavs'
                 audio_output_dir.mkdir(parents=True, exist_ok=True)
@@ -357,11 +409,7 @@ def create_datasets(
                 typer.echo(f'File {text_list_path} updated.')
                 typer.echo('-' * utils.GetTerminalColumnSize())
 
-            else:
-                typer.echo('Segment file skipped.')
-                typer.echo('-' * utils.GetTerminalColumnSize())
-
-            # 次の処理対象のファイルのインデックス
+            # 次の処理対象のファイルのインデックスに進める
             current_index += 1
 
         elif current_index < len(segment_audio_paths):
@@ -450,9 +498,25 @@ def create_datasets(
             )
             speaker_choice = gradio.Dropdown(choices=[], value='', label='音声セグメントの話者名')  # type: ignore
             transcript_box = gradio.Textbox(value='確定ボタンを押して、データセット作成を開始してください。', label='音声セグメントの書き起こし文')
-            confirm_button = gradio.Button('確定')
+            with gradio.Row():
+                confirm_button = gradio.Button('確定', variant='primary')
+                skip_button = gradio.Button('このデータを除外')
             confirm_button.click(
                 fn = OnClick,
+                inputs = [
+                    audio_player,
+                    speaker_choice,
+                    transcript_box,
+                ],
+                outputs = [
+                    audio_player,
+                    speaker_choice,
+                    transcript_box,
+                ],
+            )
+            skip_button.click(
+                # functools.partial() を使って OnClick() に is_skip=True を渡す
+                fn = functools.partial(OnClick, is_skip=True),
                 inputs = [
                     audio_player,
                     speaker_choice,
