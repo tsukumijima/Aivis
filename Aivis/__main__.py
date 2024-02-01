@@ -615,15 +615,15 @@ def train(
     ## ダウンロード中に実行を中断するとダウンロード途中のロードできない事前学習済みモデルが残ってしまう
     ## 基本ダウンロード中に実行を中断すべきではないが、万が一そうなった場合は手動でダウンロード途中のモデルを削除してから再実行する必要がある
     download_base_url = 'https://huggingface.co/Stardust-minus/Bert-VITS2-Japanese-Extra/resolve/main/'
-    if not (bert_vits2_dataset_dir / 'D_0.pth').exists():
+    if not (constants.CACHE_DIR / 'D_0.pth').exists():
         typer.echo('Downloading pretrained model (D_0.pth) ...')
-        utils.DownloadFile(download_base_url + 'D_0.pth', bert_vits2_dataset_dir / 'D_0.pth')
-    if not (bert_vits2_dataset_dir / 'G_0.pth').exists():
+        utils.DownloadFile(download_base_url + 'D_0.pth', constants.CACHE_DIR / 'D_0.pth')
+    if not (constants.CACHE_DIR / 'G_0.pth').exists():
         typer.echo('Downloading pretrained model (G_0.pth) ...')
-        utils.DownloadFile(download_base_url + 'G_0.pth', bert_vits2_dataset_dir / 'G_0.pth')
-    if not (bert_vits2_dataset_dir / 'WD_0.pth').exists():
+        utils.DownloadFile(download_base_url + 'G_0.pth', constants.CACHE_DIR / 'G_0.pth')
+    if not (constants.CACHE_DIR / 'WD_0.pth').exists():
         typer.echo('Downloading pretrained model (WD_0.pth) ...')
-        utils.DownloadFile(download_base_url + 'WD_0.pth', bert_vits2_dataset_dir / 'WD_0.pth')
+        utils.DownloadFile(download_base_url + 'WD_0.pth', constants.CACHE_DIR / 'WD_0.pth')
 
     # 既に Bert-VITS2/Data/(話者名)/audios/ が存在する場合は一旦削除
     ## 同一のデータセットでもう一度学習を回す際、Bert 関連の中間ファイルを削除して再生成されるようにする
@@ -649,11 +649,11 @@ def train(
         (bert_vits2_dataset_dir / speaker_name / 'models').mkdir(parents=True, exist_ok=True)
         ## ex: Bert-VITS2/Data/G_0.pth -> Bert-VITS2/Data/(話者名)/models/G_0.pth
         if not (bert_vits2_dataset_dir / speaker_name / 'models' / 'D_0.pth').exists():
-            shutil.copyfile(bert_vits2_dataset_dir / 'D_0.pth', bert_vits2_dataset_dir / speaker_name / 'models' / 'D_0.pth')
+            shutil.copyfile(constants.CACHE_DIR / 'D_0.pth', bert_vits2_dataset_dir / speaker_name / 'models' / 'D_0.pth')
         if not (bert_vits2_dataset_dir / speaker_name / 'models' / 'G_0.pth').exists():
-            shutil.copyfile(bert_vits2_dataset_dir / 'G_0.pth', bert_vits2_dataset_dir / speaker_name / 'models' / 'G_0.pth')
+            shutil.copyfile(constants.CACHE_DIR / 'G_0.pth', bert_vits2_dataset_dir / speaker_name / 'models' / 'G_0.pth')
         if not (bert_vits2_dataset_dir / speaker_name / 'models' / 'WD_0.pth').exists():
-            shutil.copyfile(bert_vits2_dataset_dir / 'WD_0.pth', bert_vits2_dataset_dir / speaker_name / 'models' / 'WD_0.pth')
+            shutil.copyfile(constants.CACHE_DIR / 'WD_0.pth', bert_vits2_dataset_dir / speaker_name / 'models' / 'WD_0.pth')
 
     # Bert-VITS2/configs/config.json を Bert-VITS2/Data/(話者名)/config.json にコピー
     ## モデル学習の際にこれらのファイルは上書きされてしまうため、シンボリックリンクではなくコピーする

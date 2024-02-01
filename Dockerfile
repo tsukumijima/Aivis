@@ -57,11 +57,14 @@ RUN cd /code/.venv/lib/python3.11/site-packages/pyopenjtalk/ && \
     tar -xvf open_jtalk_dic_utf_8-1.11.tar.gz && \
     rm -rf open_jtalk_dic_utf_8-1.11.tar.gz
 
-# /root/.keras/ から /root/.cache/ にシンボリックリンクを貼る
-RUN cd /root/ && ln -s .cache/ .keras
+# /root/.cache を /code/.cache/ へのシンボリックリンクにする
+RUN cd /root/ && ln -s /code/.cache/ .cache
 
-# /root/nltk_data/ から /root/.cache/ にシンボリックリンクを貼る
-RUN cd /root/ && ln -s .cache/ nltk_data
+# /root/.keras/ を /code/.cache/ へのシンボリックリンクにする
+RUN cd /root/ && ln -s /code/.cache/ .keras
+
+# /root/nltk_data/ を /code/.cache/ へのシンボリックリンクにする
+RUN cd /root/ && ln -s /code/.cache/ nltk_data
 
 # ソースコードをコピー
 COPY ./ /code/

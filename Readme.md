@@ -225,11 +225,7 @@ Web UI 上で確定ボタンを押すと、次のセグメントのアノテー�
 
 `train` サブコマンドを実行すると、指定された話者のデータセットディレクトリのコピー、`config.json` などの学習時に必要なファイルの生成、引数に応じた `Bert-VITS2/config.yml` の自動書き換えといった下処理の後、Bert-VITS2 の学習処理が開始されます。
 
-[Bert-VITS2 の事前学習モデル](https://huggingface.co/Stardust-minus/Bert-VITS2-Japanese-Extra/tree/main) がまだダウンロードされていない場合は、実行時に `05-Models/` 以下に自動的にダウンロードされます。  
-
-> [!IMPORTANT]
-> 現在の Aivis と Bert-VITS2 (Japanese-Extra ブランチ) は、2024/01/30 以前のバージョンの Aivis で自動的にダウンロードされた事前学習モデルとの互換性がありません。  
-> `05-Models/` 以下の `*.pth` ファイルを削除してから再度 `train` サブコマンドを実行し、事前学習モデルを再ダウンロードしてください。
+[Bert-VITS2 の事前学習モデル](https://huggingface.co/Stardust-minus/Bert-VITS2-Japanese-Extra/tree/main) がまだダウンロードされていない場合は、実行時に `.cache/` 以下に自動的にダウンロードされます。
 
 `--epochs` はオプションで、指定しなかった場合は 50 エポックで学習が終了します。  
 `--batch-size` はオプションで、指定しなかった場合は 4 になります。

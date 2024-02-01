@@ -20,12 +20,12 @@ fi
 # Docker コンテナを起動する
 ## --gpus all で NVIDIA GPU をコンテナ内で使えるようにする
 ## データフォルダをコンテナ内にマウントする
-## /root/.cache をマウントし、毎回学習済みモデルがダウンロードされるのを防ぐ
+## /code/.cache をマウントし、毎回学習済みモデルがダウンロードされるのを防ぐ
 ## --shm-size を指定しないと DataLoader でエラーが発生する
 ## ref: https://qiita.com/gorogoroyasu/items/e71dd3c076af145c9b44
 docker run --gpus all -it --rm --shm-size=256m \
     -p 7860:7860 \
-    -v ${BASE_DIR}/.cache:/root/.cache \
+    -v ${BASE_DIR}/.cache:/code/.cache \
     -v ${BASE_DIR}/01-Sources:/code/01-Sources \
     -v ${BASE_DIR}/02-PreparedSources:/code/02-PreparedSources \
     -v ${BASE_DIR}/03-Segments:/code/03-Segments \
