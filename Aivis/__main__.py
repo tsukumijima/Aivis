@@ -8,13 +8,14 @@ warnings.simplefilter(action='ignore', category=UserWarning)
 
 import functools
 import json
+import math
 import re
 import shutil
 import subprocess
 import sys
 import typer
 from pathlib import Path
-from typing import Annotated, Any, cast, Optional
+from typing import Annotated, Any, cast, Optional, Union
 
 from Aivis import __version__
 from Aivis import constants
@@ -591,8 +592,9 @@ def check_dataset(
 @app.command(help='Train model.')
 def train(
     speaker_name: Annotated[str, typer.Argument(help='Speaker name.')],
-    epochs: Annotated[int, typer.Option(help='Training epochs.')] = 50,
     batch_size: Annotated[int, typer.Option(help='Training batch size.')] = 4,
+    epochs: Annotated[Union[int, None], typer.Option(help='Training epochs. (Cannot be used with --steps)')] = None,
+    steps: Annotated[Union[int, None], typer.Option(help='Training steps. (Cannot be used with --epochs)')] = None,
 ):
     typer.echo('=' * utils.GetTerminalColumnSize())
 
@@ -602,9 +604,31 @@ def train(
         typer.echo(f'Error: Speaker {speaker_name} not found.')
         typer.echo('=' * utils.GetTerminalColumnSize())
         sys.exit(1)
+    if epochs is not None and steps is not None:
+        typer.echo(f'Error: --epochs and --steps cannot be used together.')
+        typer.echo('=' * utils.GetTerminalColumnSize())
+        sys.exit(1)
+    if epochs is None and steps is None:
+        typer.echo(f'Error: --epochs or --steps must be specified.')
+        typer.echo('=' * utils.GetTerminalColumnSize())
+        sys.exit(1)
 
-    typer.echo(f'Speaker: {speaker_name} / Directory: {dataset_dir}')
-    typer.echo(f'Epochs: {epochs} / Batch Size: {batch_size}')
+    # speaker.list をパースしてデータセットの音声ファイルの総数を取得
+    with open(dataset_dir / 'filelists' / 'speaker.list', 'r', encoding='utf-8') as f:
+        dataset_files_raw = f.read().splitlines()
+        dataset_files = [i.split('|') for i in dataset_files_raw]
+        dataset_files_count = len(dataset_files)
+
+    # もし --epochs が指定されている場合、バッチサイズ・データセットの総数から自動的にステップ数を計算
+    if epochs is not None:
+        steps = math.ceil((dataset_files_count / batch_size) * epochs)
+
+    # もし --steps が指定されている場合、バッチサイズ・データセットの総数から自動的にエポック数を計算
+    if steps is not None:
+        epochs = math.ceil(steps / (dataset_files_count / batch_size)) + 1  # モデルを確実に保存するため +1 しておく
+
+    typer.echo(f'Speaker: {speaker_name} / Directory: {dataset_dir} (Total {dataset_files_count} files)')
+    typer.echo(f'Batch Size: {batch_size} / Epochs: {epochs} / Steps: {steps}')
     typer.echo('=' * utils.GetTerminalColumnSize())
 
     # Bert-VITS2 のデータセットディレクトリを作成
