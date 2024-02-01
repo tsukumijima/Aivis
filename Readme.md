@@ -39,7 +39,7 @@ Geforce GTX 1080 (VRAM 8GB) での動作を確認しています。VRAM はお�
 
 ### Non-Docker
 
-Docker を使わない場合、事前に Python 3.11・Poetry・FFmpeg がインストールされている必要があります。
+Docker を使わない場合、事前に Git・Python 3.11・Poetry・FFmpeg がインストールされている必要があります。
 
 ```bash
 # サブモジュールが含まれているため --recurse を付ける
@@ -54,9 +54,17 @@ poetry install --no-root
 ./Aivis.sh --help
 ```
 
+以前インストールした環境を最新版に更新する場合は、以下のコマンドを実行してください。
+
+```bash
+git pull
+git submodule update --init --recursive
+poetry install --no-root
+```
+
 ### Docker
 
-Docker を使う場合、事前に Docker がインストールされている必要があります。  
+Docker を使う場合、事前に Git・Docker がインストールされている必要があります。  
 Docker を使わない場合と比べてあまり検証できていないため、うまく動かないことがあるかもしれません。
 
 
@@ -70,6 +78,14 @@ cd Aivis
 
 # ヘルプを表示
 ./Aivis-Docker.sh --help
+```
+
+以前インストールした環境を最新版に更新する場合は、以下のコマンドを実行してください。
+
+```bash
+git pull
+git submodule update --init --recursive
+./Aivis-Docker.sh build
 ```
 
 ## Dataset Directory Structure
