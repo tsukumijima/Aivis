@@ -69,5 +69,5 @@ RUN cd /root/ && ln -s /code/.cache/ nltk_data
 # ソースコードをコピー
 COPY ./ /code/
 
-# poetry run task Aivis をエントリーポイントとして指定
-ENTRYPOINT ["poetry", "run", "task", "Aivis"]
+# ./Aivis.sh をエントリーポイントとして指定
+ENTRYPOINT ["./Aivis.sh"]

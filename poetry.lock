@@ -2269,17 +2269,6 @@ gmpy = ["gmpy2 (>=2.1.0a4)"]
 tests = ["pytest (>=4.6)"]
 
 [[package]]
-name = "mslex"
-version = "1.1.0"
-description = "shlex for windows"
-optional = false
-python-versions = ">=3.5"
-files = [
-    {file = "mslex-1.1.0-py2.py3-none-any.whl", hash = "sha256:8826f4bb8d8c63402203d921dc8c2df0c7fec0d9c91d020ddf02fc9d0dce81bd"},
-    {file = "mslex-1.1.0.tar.gz", hash = "sha256:7fe305fbdc9721283875e0b737fdb344374b761338a7f41af91875de278568e4"},
-]
-
-[[package]]
 name = "networkx"
 version = "3.2.1"
 description = "Python package for creating and manipulating graphs and networks"
@@ -4334,23 +4323,6 @@ files = [
 widechars = ["wcwidth"]
 
 [[package]]
-name = "taskipy"
-version = "1.12.2"
-description = "tasks runner for python projects"
-optional = false
-python-versions = ">=3.6,<4.0"
-files = [
-    {file = "taskipy-1.12.2-py3-none-any.whl", hash = "sha256:ffdbb0bb0db54c0ec5c424610a3a087eea22706d4d1f6e3e8b4f12ebba05f98f"},
-    {file = "taskipy-1.12.2.tar.gz", hash = "sha256:eadfdc20d6bb94d8018eda32f1dbf584cf4aa6cffb71ba5cc2de20d344f8c4fb"},
-]
-
-[package.dependencies]
-colorama = ">=0.4.4,<0.5.0"
-mslex = {version = ">=1.1.0,<2.0.0", markers = "sys_platform == \"win32\""}
-psutil = ">=5.7.2,<6.0.0"
-tomli = {version = ">=2.0.1,<3.0.0", markers = "python_version >= \"3.7\" and python_version < \"4.0\""}
-
-[[package]]
 name = "tensorboard"
 version = "2.15.1"
 description = "TensorBoard lets you watch Tensors Flow"
@@ -4575,17 +4547,6 @@ huggingface_hub = ">=0.16.4,<1.0"
 dev = ["tokenizers[testing]"]
 docs = ["setuptools_rust", "sphinx", "sphinx_rtd_theme"]
 testing = ["black (==22.3)", "datasets", "numpy", "pytest", "requests"]
-
-[[package]]
-name = "tomli"
-version = "2.0.1"
-description = "A lil' TOML parser"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
-    {file = "tomli-2.0.1.tar.gz", hash = "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"},
-]
 
 [[package]]
 name = "tomlkit"
@@ -5191,4 +5152,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.12"
-content-hash = "bae203dfab17a3e36e0dc6d0f0ce32e4bddffffb6f273abdf81cf650520fcca0"
+content-hash = "28bfdbe2d6332e3e8e2f868105006c26947acb965cdf5bed96d0c4f5306df7c9"
