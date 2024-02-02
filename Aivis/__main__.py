@@ -348,8 +348,8 @@ def create_datasets(
             shutil.copyfile(segment_audio_path, output_path)
             typer.echo(f'File {output_path} saved.')
 
-            # 音声ファイルのパスと書き起こし文のパスのペアを speaker.list に順次追記
-            text_list_path = constants.DATASETS_DIR / speaker_name / 'filelists' / 'speaker.list'
+            # 音声ファイルのパスと書き起こし文のパスのペアを transcripts.list に順次追記
+            text_list_path = constants.DATASETS_DIR / speaker_name / 'filelists' / 'transcripts.list'
             if not text_list_path.exists():  # ファイルがなければ空のファイルを作成
                 text_list_path.parent.mkdir(parents=True, exist_ok=True)
                 text_list_path.touch()
@@ -400,8 +400,8 @@ def create_datasets(
                 shutil.copyfile(segment_audio_path, output_path)
                 typer.echo(f'File {output_path} saved.')
 
-                # 音声ファイルのパスと書き起こし文のパスのペアを speaker.list に順次追記
-                text_list_path = constants.DATASETS_DIR / speaker_name / 'filelists' / 'speaker.list'
+                # 音声ファイルのパスと書き起こし文のパスのペアを transcripts.list に順次追記
+                text_list_path = constants.DATASETS_DIR / speaker_name / 'filelists' / 'transcripts.list'
                 if not text_list_path.exists():  # ファイルがなければ空のファイルを作成
                     text_list_path.parent.mkdir(parents=True, exist_ok=True)
                     text_list_path.touch()
@@ -559,9 +559,9 @@ def check_dataset(
         typer.echo('=' * utils.GetTerminalColumnSize())
         sys.exit(1)
 
-    # speaker.list をパースして音声ファイルのパスと書き起こし文を取得
+    # transcripts.list をパースして音声ファイルのパスと書き起こし文を取得
     ## 例: Data/SpeakerName/audios/wavs/0001_こんにちは.wav|SpeakerName|JP|こんにちは
-    with open(dataset_dir / 'filelists' / 'speaker.list', 'r', encoding='utf-8') as f:
+    with open(dataset_dir / 'filelists' / 'transcripts.list', 'r', encoding='utf-8') as f:
         dataset_files_raw = f.read().splitlines()
         dataset_files = [i.split('|') for i in dataset_files_raw]
 
@@ -613,8 +613,8 @@ def train(
         typer.echo('=' * utils.GetTerminalColumnSize())
         sys.exit(1)
 
-    # speaker.list をパースしてデータセットの音声ファイルの総数を取得
-    with open(dataset_dir / 'filelists' / 'speaker.list', 'r', encoding='utf-8') as f:
+    # transcripts.list をパースしてデータセットの音声ファイルの総数を取得
+    with open(dataset_dir / 'filelists' / 'transcripts.list', 'r', encoding='utf-8') as f:
         dataset_files_raw = f.read().splitlines()
         dataset_files = [i.split('|') for i in dataset_files_raw]
         dataset_files_count = len(dataset_files)
