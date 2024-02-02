@@ -103,7 +103,7 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: 
             shutil.copyfile(dst_file_path_temp4, dst_file_path_new)
             typer.echo('Warning: File name is too long. Truncated.')
             # フルの書き起こし文にアクセスできるように、別途テキストファイルに書き起こし文を保存する
-            with open(dst_file_path_new.with_suffix('.txt'), 'w', encoding='utf-8') as f:
+            with open(dst_file_path_new.with_suffix('.txt'), mode='w', encoding='utf-8') as f:
                 transcript = re.sub(r'^\d+_', '', dst_file_path.stem)
                 f.write(transcript)
             # ファイル名からの書き起こし文の取得が終わったので、dst_file_path を上書きする
@@ -116,7 +116,7 @@ def SliceAudioFile(src_file_path: Path, dst_file_path: Path, start: float, end: 
             shutil.copyfile(dst_file_path_temp4, dst_file_path_new)
             typer.echo('Warning: File name contains invalid characters. Replaced.')
             # フルの書き起こし文にアクセスできるように、別途テキストファイルに書き起こし文を保存する
-            with open(dst_file_path_new.with_suffix('.txt'), 'w', encoding='utf-8') as f:
+            with open(dst_file_path_new.with_suffix('.txt'), mode='w', encoding='utf-8') as f:
                 transcript = re.sub(r'^\d+_', '', dst_file_path.stem)
                 f.write(transcript)
             # ファイル名からの書き起こし文の取得が終わったので、dst_file_path を上書きする

@@ -300,7 +300,7 @@ def create_datasets(
         # それを読み込んで使う
         segment_audio_transcript_txt = segment_audio_path.with_suffix('.txt')
         if segment_audio_transcript_txt.exists():
-            with open(segment_audio_transcript_txt, 'r', encoding='utf-8') as f:
+            with open(segment_audio_transcript_txt, mode='r', encoding='utf-8') as f:
                 segment_audio_transcript = f.read()
 
         # 書き起こし文をリストに追加
@@ -317,7 +317,7 @@ def create_datasets(
     for speaker in speaker_name_list:
         # 既にそのディレクトリに存在するファイルの中で連番が一番大きいものを取得し、それに 1 を足したものを初期値とする
         output_audio_count[speaker] = max([
-            int(re.sub(r'\D', '', i.stem)) for i in (constants.DATASETS_DIR / speaker / 'audios' / 'wavs').glob('*.wav')
+            int(re.sub(r'\D', '', i.stem)) for i in (constants.DATASETS_DIR / speaker / 'audios').glob('*.wav')
         ], default=0) + 1
 
     # --accept-all を指定して UI を表示せずにすべての音声ファイルを一括処理する場合
@@ -341,7 +341,7 @@ def create_datasets(
             typer.echo(f'Transcript   : {transcript}')
 
             # データセットに音声ファイルを保存 (書き起こし文はファイル名が長くなるので含まず、別途書き起こしファイルに保存する)
-            audio_output_dir = constants.DATASETS_DIR / speaker_name / 'audios' / 'wavs'
+            audio_output_dir = constants.DATASETS_DIR / speaker_name / 'audios'
             audio_output_dir.mkdir(parents=True, exist_ok=True)
             output_path = audio_output_dir / f'{output_audio_count[speaker_name]:04}.wav'
             output_audio_count[speaker_name] += 1  # 連番をインクリメント
@@ -353,8 +353,8 @@ def create_datasets(
             if not text_list_path.exists():  # ファイルがなければ空のファイルを作成
                 text_list_path.parent.mkdir(parents=True, exist_ok=True)
                 text_list_path.touch()
-            with open(text_list_path, 'a', encoding='utf-8') as f:
-                f.write(f'Data/{speaker_name}/audios/wavs/{output_path.name}|{speaker_name}|JP|{transcript}\n')
+            with open(text_list_path, mode='a', encoding='utf-8') as f:
+                f.write(f'{output_path.name}|{speaker_name}|JP|{transcript}\n')
             typer.echo(f'File {text_list_path} updated.')
             typer.echo('-' * utils.GetTerminalColumnSize())
 
@@ -393,7 +393,7 @@ def create_datasets(
             else:
                 # データセットに編集後の音声ファイルを保存 (書き起こし文はファイル名が長くなるので含まず、別途書き起こしファイルに保存する)
                 ## Gradio の謎機能で、GUI でトリムした編集後の一次ファイルが segment_audio_path_str として渡されてくる
-                audio_output_dir = constants.DATASETS_DIR / speaker_name / 'audios' / 'wavs'
+                audio_output_dir = constants.DATASETS_DIR / speaker_name / 'audios'
                 audio_output_dir.mkdir(parents=True, exist_ok=True)
                 output_path = audio_output_dir / f'{output_audio_count[speaker_name]:04}.wav'
                 output_audio_count[speaker_name] += 1  # 連番をインクリメント
@@ -405,8 +405,8 @@ def create_datasets(
                 if not text_list_path.exists():  # ファイルがなければ空のファイルを作成
                     text_list_path.parent.mkdir(parents=True, exist_ok=True)
                     text_list_path.touch()
-                with open(text_list_path, 'a', encoding='utf-8') as f:
-                    f.write(f'Data/{speaker_name}/audios/wavs/{output_path.name}|{speaker_name}|JP|{transcript}\n')
+                with open(text_list_path, mode='a', encoding='utf-8') as f:
+                    f.write(f'{output_path.name}|{speaker_name}|JP|{transcript}\n')
                 typer.echo(f'File {text_list_path} updated.')
                 typer.echo('-' * utils.GetTerminalColumnSize())
 
@@ -559,9 +559,9 @@ def check_dataset(
         typer.echo('=' * utils.GetTerminalColumnSize())
         sys.exit(1)
 
-    # transcripts.list をパースして音声ファイルのパスと書き起こし文を取得
-    ## 例: Data/SpeakerName/audios/wavs/0001_こんにちは.wav|SpeakerName|JP|こんにちは
-    with open(dataset_dir / 'transcripts.list', 'r', encoding='utf-8') as f:
+    # transcripts.list をパースして音声ファイル名と書き起こし文を取得
+    ## 例: 0001.wav|SpeakerName|JP|こんにちは
+    with open(dataset_dir / 'transcripts.list', mode='r', encoding='utf-8') as f:
         dataset_files_raw = f.read().splitlines()
         dataset_files = [i.split('|') for i in dataset_files_raw]
 
@@ -573,7 +573,7 @@ def check_dataset(
     for index, dataset_file in enumerate(dataset_files):
         if index > 0:
             typer.echo('-' * utils.GetTerminalColumnSize())
-        dataset_file_path = Path(dataset_file[0].replace('Data/', constants.DATASETS_DIR.as_posix() + '/'))
+        dataset_file_path = constants.DATASETS_DIR / speaker_name / 'audios' / dataset_file[0]
         typer.echo(f'Dataset File : {dataset_file_path}')
         if not dataset_file_path.exists():
             typer.echo(f'Error: Dataset file {dataset_file_path} not found.')
@@ -614,7 +614,7 @@ def train(
         sys.exit(1)
 
     # transcripts.list をパースしてデータセットの音声ファイルの総数を取得
-    with open(dataset_dir / 'transcripts.list', 'r', encoding='utf-8') as f:
+    with open(dataset_dir / 'transcripts.list', mode='r', encoding='utf-8') as f:
         dataset_files_raw = f.read().splitlines()
         dataset_files = [i.split('|') for i in dataset_files_raw]
         dataset_files_count = len(dataset_files)
@@ -653,22 +653,29 @@ def train(
     ## 同一のデータセットでもう一度学習を回す際、Bert 関連の中間ファイルを削除して再生成されるようにする
     if (bert_vits2_dataset_dir / speaker_name / 'audios').exists():
         shutil.rmtree(bert_vits2_dataset_dir / speaker_name / 'audios')
-        # 再度空のディレクトリを作成
-        (bert_vits2_dataset_dir / speaker_name / 'audios').mkdir(parents=True, exist_ok=True)
+    ## 再度空のディレクトリを作成
+    (bert_vits2_dataset_dir / speaker_name / 'audios').mkdir(parents=True, exist_ok=True)
 
     # 既に Bert-VITS2/Data/(話者名)/filelists/ が存在する場合は一旦削除
     ## 同一のデータセットでもう一度学習を回す際、書き起こしデータの中間ファイルを削除して再生成されるようにする
     if (bert_vits2_dataset_dir / speaker_name / 'filelists').exists():
         shutil.rmtree(bert_vits2_dataset_dir / speaker_name / 'filelists')
-        # 再度空のディレクトリを作成
-        (bert_vits2_dataset_dir / speaker_name / 'filelists').mkdir(parents=True, exist_ok=True)
+    ## 再度空のディレクトリを作成
+    (bert_vits2_dataset_dir / speaker_name / 'filelists').mkdir(parents=True, exist_ok=True)
 
     # 指定されたデータセットを Bert-VITS2 のデータセットディレクトリにコピー
-    ## ex: 04-Datasets/(話者名)/audios/wavs/ -> Bert-VITS2/Data/(話者名)/audios/wavs/
+    ## ex: 04-Datasets/(話者名)/audios/ -> Bert-VITS2/Data/(話者名)/audios/wavs/
     ## ex: 04-Datasets/(話者名)/transcripts.list -> Bert-VITS2/Data/(話者名)/filelists/transcripts.list
     typer.echo('Copying dataset files...')
-    shutil.copytree(dataset_dir / 'audios' / 'wavs', bert_vits2_dataset_dir / speaker_name / 'audios' / 'wavs')
-    shutil.copytree(dataset_dir / 'transcripts.list', bert_vits2_dataset_dir / speaker_name / 'filelists' / 'transcripts.list')
+    shutil.copytree(dataset_dir / 'audios', bert_vits2_dataset_dir / speaker_name / 'audios' / 'wavs')
+    shutil.copyfile(dataset_dir / 'transcripts.list', bert_vits2_dataset_dir / speaker_name / 'filelists' / 'transcripts.list')
+
+    # 書き起こし文ファイル内の音声ファイル名を Data/(話者名)/audios/wavs/ からのパスに変更
+    ## 例: 0001.wav|SpeakerName|JP|こんにちは → Data/SpeakerName/audios/wavs/0001.wav|SpeakerName|JP|こんにちは
+    with open(bert_vits2_dataset_dir / speaker_name / 'filelists' / 'transcripts.list', 'r', encoding='utf-8') as f:
+        transcripts_list = f.read()
+    with open(bert_vits2_dataset_dir / speaker_name / 'filelists' / 'transcripts.list', 'w', encoding='utf-8') as f:
+        f.write(re.sub(r'(.*\.wav)', f'Data/{speaker_name}/audios/wavs/\\1', transcripts_list))
 
     # ダウンロードした事前学習済みモデルを Bert-VITS2/Data/(話者名)/models/ にコピー
     ## モデル学習の際にこれらのファイルは上書きされてしまうため、シンボリックリンクではなくコピーする
@@ -690,11 +697,11 @@ def train(
         shutil.copyfile(constants.BERT_VITS2_DIR / 'configs' / 'config.json', bert_vits2_dataset_dir / speaker_name / 'config.json')
 
     # コピーした config.json の epochs と batch_size とを指定された値に変更
-    with open(bert_vits2_dataset_dir / speaker_name / 'config.json', 'r', encoding='utf-8') as f:
+    with open(bert_vits2_dataset_dir / speaker_name / 'config.json', mode='r', encoding='utf-8') as f:
         config = json.load(f)
     config['train']['epochs'] = epochs
     config['train']['batch_size'] = batch_size
-    with open(bert_vits2_dataset_dir / speaker_name / 'config.json', 'w', encoding='utf-8') as f:
+    with open(bert_vits2_dataset_dir / speaker_name / 'config.json', mode='w', encoding='utf-8') as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
 
     # Bert-VITS2/default_config.yml を Bert-VITS2/config.yml にコピー
@@ -704,10 +711,10 @@ def train(
 
     # config.yml 内の dataset_path: "Data/MySpeaker" を dataset_path: "Data/(話者名)" に変更
     ## 正規表現で置換する
-    with open(constants.BERT_VITS2_DIR / 'config.yml', 'r', encoding='utf-8') as f:
+    with open(constants.BERT_VITS2_DIR / 'config.yml', mode='r', encoding='utf-8') as f:
         config_yml = f.read()
     config_yml = re.sub(r'dataset_path: "Data/.*"', f'dataset_path: "Data/{speaker_name}"', config_yml)
-    with open(constants.BERT_VITS2_DIR / 'config.yml', 'w', encoding='utf-8') as f:
+    with open(constants.BERT_VITS2_DIR / 'config.yml', mode='w', encoding='utf-8') as f:
         f.write(config_yml)
     typer.echo('=' * utils.GetTerminalColumnSize())
 
@@ -806,11 +813,11 @@ def infer(
     # config.yml を正規表現で書き換える
     ## dataset_path: ".*" を dataset_path: "Data/(話者名)" に書き換える
     ## model: "models/.*" を model: "models/G_(ステップ数).pth" に書き換える
-    with open(constants.BERT_VITS2_DIR / 'config.yml', 'r', encoding='utf-8') as f:
+    with open(constants.BERT_VITS2_DIR / 'config.yml', mode='r', encoding='utf-8') as f:
         config_yml = f.read()
     config_yml = re.sub(r'dataset_path: ".*"', f'dataset_path: "Data/{speaker_name}"', config_yml)
     config_yml = re.sub(r'model: "models/.*"', f'model: "models/G_{model_step}.pth"', config_yml)
-    with open(constants.BERT_VITS2_DIR / 'config.yml', 'w', encoding='utf-8') as f:
+    with open(constants.BERT_VITS2_DIR / 'config.yml', mode='w', encoding='utf-8') as f:
         f.write(config_yml)
 
     # Bert-VITS2/webui.py を実行
