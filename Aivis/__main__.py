@@ -349,7 +349,7 @@ def create_datasets(
             typer.echo(f'File {output_path} saved.')
 
             # 音声ファイルのパスと書き起こし文のパスのペアを transcripts.list に順次追記
-            text_list_path = constants.DATASETS_DIR / speaker_name / 'filelists' / 'transcripts.list'
+            text_list_path = constants.DATASETS_DIR / speaker_name / 'transcripts.list'
             if not text_list_path.exists():  # ファイルがなければ空のファイルを作成
                 text_list_path.parent.mkdir(parents=True, exist_ok=True)
                 text_list_path.touch()
@@ -401,7 +401,7 @@ def create_datasets(
                 typer.echo(f'File {output_path} saved.')
 
                 # 音声ファイルのパスと書き起こし文のパスのペアを transcripts.list に順次追記
-                text_list_path = constants.DATASETS_DIR / speaker_name / 'filelists' / 'transcripts.list'
+                text_list_path = constants.DATASETS_DIR / speaker_name / 'transcripts.list'
                 if not text_list_path.exists():  # ファイルがなければ空のファイルを作成
                     text_list_path.parent.mkdir(parents=True, exist_ok=True)
                     text_list_path.touch()
@@ -561,7 +561,7 @@ def check_dataset(
 
     # transcripts.list をパースして音声ファイルのパスと書き起こし文を取得
     ## 例: Data/SpeakerName/audios/wavs/0001_こんにちは.wav|SpeakerName|JP|こんにちは
-    with open(dataset_dir / 'filelists' / 'transcripts.list', 'r', encoding='utf-8') as f:
+    with open(dataset_dir / 'transcripts.list', 'r', encoding='utf-8') as f:
         dataset_files_raw = f.read().splitlines()
         dataset_files = [i.split('|') for i in dataset_files_raw]
 
@@ -614,7 +614,7 @@ def train(
         sys.exit(1)
 
     # transcripts.list をパースしてデータセットの音声ファイルの総数を取得
-    with open(dataset_dir / 'filelists' / 'transcripts.list', 'r', encoding='utf-8') as f:
+    with open(dataset_dir / 'transcripts.list', 'r', encoding='utf-8') as f:
         dataset_files_raw = f.read().splitlines()
         dataset_files = [i.split('|') for i in dataset_files_raw]
         dataset_files_count = len(dataset_files)
@@ -653,18 +653,22 @@ def train(
     ## 同一のデータセットでもう一度学習を回す際、Bert 関連の中間ファイルを削除して再生成されるようにする
     if (bert_vits2_dataset_dir / speaker_name / 'audios').exists():
         shutil.rmtree(bert_vits2_dataset_dir / speaker_name / 'audios')
+        # 再度空のディレクトリを作成
+        (bert_vits2_dataset_dir / speaker_name / 'audios').mkdir(parents=True, exist_ok=True)
 
     # 既に Bert-VITS2/Data/(話者名)/filelists/ が存在する場合は一旦削除
     ## 同一のデータセットでもう一度学習を回す際、書き起こしデータの中間ファイルを削除して再生成されるようにする
     if (bert_vits2_dataset_dir / speaker_name / 'filelists').exists():
         shutil.rmtree(bert_vits2_dataset_dir / speaker_name / 'filelists')
+        # 再度空のディレクトリを作成
+        (bert_vits2_dataset_dir / speaker_name / 'filelists').mkdir(parents=True, exist_ok=True)
 
     # 指定されたデータセットを Bert-VITS2 のデータセットディレクトリにコピー
-    ## ex: 04-Datasets/(話者名)/audios/ -> Bert-VITS2/Data/(話者名)/audios/
-    ## ex: 04-Datasets/(話者名)/filelists/ -> Bert-VITS2/Data/(話者名)/filelists/
+    ## ex: 04-Datasets/(話者名)/audios/wavs/ -> Bert-VITS2/Data/(話者名)/audios/wavs/
+    ## ex: 04-Datasets/(話者名)/transcripts.list -> Bert-VITS2/Data/(話者名)/filelists/transcripts.list
     typer.echo('Copying dataset files...')
-    shutil.copytree(dataset_dir / 'audios', bert_vits2_dataset_dir / speaker_name / 'audios')
-    shutil.copytree(dataset_dir / 'filelists', bert_vits2_dataset_dir / speaker_name / 'filelists')
+    shutil.copytree(dataset_dir / 'audios' / 'wavs', bert_vits2_dataset_dir / speaker_name / 'audios' / 'wavs')
+    shutil.copytree(dataset_dir / 'transcripts.list', bert_vits2_dataset_dir / speaker_name / 'filelists' / 'transcripts.list')
 
     # ダウンロードした事前学習済みモデルを Bert-VITS2/Data/(話者名)/models/ にコピー
     ## モデル学習の際にこれらのファイルは上書きされてしまうため、シンボリックリンクではなくコピーする
